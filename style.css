@@ -1,0 +1,17 @@
+body { font-family:-apple-system,"Segoe UI",sans-serif; background:#f4f5f7; margin:0; padding:20px; color:#333; }
+.container { max-width:1400px; margin:0 auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+h1 { text-align:center; font-size:18px; margin:0 0 20px; }
+h2 { font-size:15px; margin:24px 0 12px; }
+.input-row { display:flex; gap:8px; margin-bottom:12px; }
+.input-row input, .input-row textarea { flex:1; padding:8px 12px; border:1px solid #ccc; border-radius:6px; font-size:13px; }
+.input-row textarea { min-height:100px; font-family:monospace; resize:vertical; }
+button { padding:8px 16px; background:#3b82f6; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px; white-space:nowrap; }
+button:hover { background:#2563eb; }
+button.secondary { background:#6b7280; }
+button.secondary:hover { background:#4b5563; }
+#status { min-height:20px; font-size:13px; color:#666; margin-bottom:12px; }
+table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:24px; }
+th, td { border-bottom:1px solid #e1e4e8; padding:8px 10px; text-align:left; }
+th { background:#f8f9fa; }
+.stack-4 { color:#3b82f6; font-weight:bold; }
+.stack-6 { color:#f59e0b; font-weight:bold; }
