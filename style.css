@@ -78,13 +78,16 @@ button.secondary:hover {
   margin-bottom: 12px;
 }
 
-/* ---------- 表格：固定布局，列不会错位 ---------- */
+/* ---------- 表格 ---------- */
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
   margin-bottom: 24px;
   table-layout: fixed;
+  border: 1px solid #eef1f5;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 th, td {
@@ -98,15 +101,29 @@ th, td {
 }
 
 th {
-  background: #f8f9fa;
+  background: #f3f5f9;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 10px 10px;
 }
 
-td:nth-child(2),
-td:nth-child(6),
-td:nth-child(9) {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+#resultTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+#resultTable tbody tr:nth-child(even) {
+  background: #fcfcfd;
+}
+
+#resultTable tbody tr:nth-child(even):hover {
+  background: #f1f5f9;
+}
+
+#resultTable td:nth-child(1) {
+  text-align: center;
+  color: #9ca3af;
+  font-size: 12px;
 }
 
 /* 协议标签 */
@@ -128,6 +145,64 @@ td:nth-child(9) {
 .stack-6 {
   color: #f59e0b;
   font-weight: bold;
+}
+
+/* ---------- 入口 IP 列 ---------- */
+td:nth-child(8) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #1f2937;
+}
+
+.ipv4-text {
+  letter-spacing: 0.2px;
+}
+
+.ipv6-chip {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  transition: background .15s, color .15s;
+}
+
+.ipv6-chip:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+/* ---------- IPv6 浮层 ---------- */
+.ip-popover {
+  position: fixed;
+  z-index: 9999;
+  padding: 10px 14px;
+  background: rgba(17, 24, 39, 0.95);
+  color: #f9fafb;
+  border-radius: 8px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 440px;
+  word-break: break-all;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+
+.ip-popover.show {
+  opacity: 1;
 }
 
 /* ---------- 个人画像 ---------- */
@@ -165,5 +240,9 @@ td:nth-child(9) {
 /* ---------- 拓扑图 ---------- */
 .topo {
   width: 100%;
-  height: 650px;
+  height: 500px;
+  background: linear-gradient(180deg, #fafbfd 0%, #f4f6f9 100%);
+  border: 1px solid #eef1f5;
+  border-radius: 10px;
+  box-sizing: border-box;
 }
