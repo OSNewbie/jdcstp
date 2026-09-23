@@ -430,11 +430,77 @@ function renderTable(rows) {
       <td>${escapeHtml(r.asn)}</td>
       <td title="${escapeHtml(r.org)}">${escapeHtml(r.org)}</td>
       <td><span class="stack-${r.stack}">IPv${r.stack}</span></td>
-      <td>${escapeHtml(r.ip)}</td>
+      <td>${renderIpCell(r.ip)}</td>
       <td>${escapeHtml(r.detail)}</td>
     </tr>
   `).join('');
 }
+
+// ---- IP 单元格渲染 ----
+function isIPv6(ip) {
+  return typeof ip === 'string' && ip.includes(':') && ip !== '-';
+}
+
+function shortenIPv6(ip) {
+  if (!ip || ip.length <= 16) return ip;
+  return ip.slice(0, 8) + '…' + ip.slice(-5);
+}
+
+function renderIpCell(ip) {
+  if (!ip || ip === '-') return '-';
+  if (isIPv6(ip)) {
+    return `<span class="ipv6-chip" data-full="${escapeHtml(ip)}">${escapeHtml(shortenIPv6(ip))}</span>`;
+  }
+  return `<span class="ipv4-text">${escapeHtml(ip)}</span>`;
+}
+
+// ---- IPv6 浮层 ----
+let ipPopoverEl = null;
+function getIpPopover() {
+  if (!ipPopoverEl) {
+    ipPopoverEl = document.createElement('div');
+    ipPopoverEl.className = 'ip-popover';
+    document.body.appendChild(ipPopoverEl);
+  }
+  return ipPopoverEl;
+}
+
+function showIpPopover(target, text) {
+  const el = getIpPopover();
+  el.textContent = text;
+  el.style.top = '-9999px';
+  el.style.left = '-9999px';
+  el.classList.add('show');
+
+  const elRect = el.getBoundingClientRect();
+  const rect = target.getBoundingClientRect();
+  let top = rect.top - elRect.height - 8;
+  let left = rect.left;
+  if (top < 8) top = rect.bottom + 8;
+  if (left + elRect.width > window.innerWidth - 8) {
+    left = window.innerWidth - elRect.width - 8;
+  }
+  if (left < 8) left = 8;
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+}
+
+function hideIpPopover() {
+  if (ipPopoverEl) ipPopoverEl.classList.remove('show');
+}
+
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.ipv6-chip');
+  if (chip) {
+    e.stopPropagation();
+    showIpPopover(chip, chip.dataset.full);
+    return;
+  }
+  hideIpPopover();
+});
+
+window.addEventListener('scroll', hideIpPopover, true);
+window.addEventListener('resize', hideIpPopover);
 
 // ============================================================
 // 10. 个人画像
@@ -497,12 +563,13 @@ function renderBar(id, dataMap, title) {
 }
 
 // ============================================================
-// 11. 拓扑图
+// 11. 拓扑图（列布局）
 // ============================================================
 function renderTopo(rows) {
   const el = $('topoChart');
   if (!el) return;
   let chart = echarts.getInstanceByDom(el) || echarts.init(el);
+  chart.clear();
 
   const groups = {};
   rows.forEach(r => {
@@ -511,58 +578,118 @@ function renderTopo(rows) {
   });
 
   const orgNames = Object.keys(groups);
-  const categories = orgNames.map(name => ({ name }));
+
+  // ---- 列布局参数 ----
+  const colWidth  = 160;
+  const padLeft   = 60;
+  const padTop    = 40;
+  const orgIpGap  = 70;
+  const ipGap     = 32;
+  const orgSize   = 40;
+  const ipSize    = 8;
+
+  let maxRows = 0;
+  orgNames.forEach(o => { maxRows = Math.max(maxRows, groups[o].length); });
+  const totalHeight = padTop + orgIpGap + maxRows * ipGap + 40;
+  const totalWidth  = padLeft * 2 + orgNames.length * colWidth;
+
   const nodes = [];
   const links = [];
 
   orgNames.forEach((name, i) => {
+    const cx = padLeft + i * colWidth + colWidth / 2;
+
     nodes.push({
       id: `org-${i}`,
       name,
-      category: i,
-      symbolSize: 44,
-      itemStyle: { color: palette(i) },
-      label: { show: true, formatter: name, fontSize: 13, fontWeight: 'bold' },
+      x: cx,
+      y: padTop,
+      symbolSize: orgSize,
+      itemStyle: {
+        color: palette(i),
+        borderColor: '#fff',
+        borderWidth: 3,
+        shadowBlur: 10,
+        shadowColor: 'rgba(0,0,0,0.12)',
+      },
+      label: {
+        show: true,
+        formatter: name.length > 7 ? name.slice(0, 7) + '…' : name,
+        fontSize: 11,
+        fontWeight: 600,
+        color: '#fff',
+        position: 'inside',
+      },
+    });
+
+    groups[name].forEach((r, j) => {
+      const ipId = `ip-${i}-${j}`;
+      nodes.push({
+        id: ipId,
+        name: r.ip,
+        x: cx,
+        y: padTop + orgIpGap + j * ipGap,
+        symbolSize: ipSize,
+        itemStyle: {
+          color: palette(i),
+          opacity: 0.85,
+          borderColor: '#fff',
+          borderWidth: 1.5,
+        },
+        label: { show: false },
+        value: r,
+      });
+      links.push({
+        source: `org-${i}`,
+        target: ipId,
+        lineStyle: { color: palette(i), opacity: 0.28, width: 1, curveness: 0 },
+      });
     });
   });
 
-  rows.forEach((r, idx) => {
-    const orgIdx = orgNames.indexOf(r.org || '未知');
-    const ipId = `ip-${idx}`;
-    nodes.push({
-      id: ipId,
-      name: r.ip,
-      category: orgIdx,
-      symbolSize: 14,
-      itemStyle: { color: palette(orgIdx) },
-      label: { show: true, formatter: r.detail, fontSize: 10, position: 'right' },
-      value: r,
-    });
-    links.push({ source: `org-${orgIdx}`, target: ipId });
-  });
+  const w = el.clientWidth  || 1000;
+  const h = el.clientHeight || 500;
+  const zoom = Math.min(w / totalWidth, h / totalHeight, 1) * 0.95;
 
   chart.setOption({
     tooltip: {
+      backgroundColor: 'rgba(255,255,255,0.96)',
+      borderColor: '#e5e7eb',
+      borderWidth: 1,
+      padding: [10, 14],
+      textStyle: { color: '#374151', fontSize: 12 },
+      extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-radius: 8px;',
       formatter: p => {
         if (p.dataType === 'node' && p.data.value) {
           const r = p.data.value;
-          return `<b>${r.name}</b><br/>协议: ${r.protocol}<br/>IP: ${r.ip}<br/>组织: ${r.org}<br/>ASN: ${r.asn}<br/>地区: ${r.region} / ${r.detail}<br/>栈: IPv${r.stack}`;
+          return `<b style="color:#111">${r.name}</b><br/>
+            <span style="color:#6b7280">协议</span> ${r.protocol}<br/>
+            <span style="color:#6b7280">IP</span> ${r.ip}<br/>
+            <span style="color:#6b7280">组织</span> ${r.org}<br/>
+            <span style="color:#6b7280">ASN</span> ${r.asn}<br/>
+            <span style="color:#6b7280">地区</span> ${r.region} · ${r.detail}<br/>
+            <span style="color:#6b7280">栈</span> IPv${r.stack}`;
         }
         return p.name;
       },
     },
-    legend: [{ data: orgNames, orient: 'vertical', left: 0, top: 20, textStyle: { fontSize: 12 } }],
     series: [{
       type: 'graph',
-      layout: 'force',
+      layout: 'none',
       roam: true,
-      draggable: true,
-      categories,
+      draggable: false,
+      zoom: zoom,
+      center: [totalWidth / 2, totalHeight / 2],
       data: nodes,
       links,
-      force: { repulsion: 400, edgeLength: [90, 170], gravity: 0.05 },
-      lineStyle: { color: 'source', curveness: 0.2, opacity: 0.5 },
-      emphasis: { focus: 'adjacency' },
+      lineStyle: { color: 'source', opacity: 0.28, width: 1, curveness: 0 },
+      emphasis: {
+        focus: 'adjacency',
+        scale: 1.4,
+        label: { show: true, fontSize: 11, color: '#374151', position: 'right' },
+        lineStyle: { width: 2, opacity: 0.8 },
+      },
+      labelLayout: { hideOverlap: true },
     }],
   }, true);
 
@@ -570,7 +697,10 @@ function renderTopo(rows) {
 }
 
 function palette(i) {
-  const colors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#6366f1','#84cc16','#06b6d4','#a855f7'];
+  const colors = [
+    '#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6',
+    '#2dd4bf','#fb923c','#818cf8','#a3e635','#22d3ee','#c084fc',
+  ];
   return colors[i % colors.length];
 }
 
@@ -635,5 +765,6 @@ $('clearBtn').onclick = () => {
       if (chart) chart.clear();
     }
   });
+  hideIpPopover();
   setStatus('等待输入...');
 };
