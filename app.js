@@ -563,112 +563,163 @@ function renderBar(id, dataMap, title) {
 }
 
 // ============================================================
-// 11. 拓扑图（列布局）
+// 11. 拓扑图（横向条目式布局）
 // ============================================================
+let currentTopoRows = null;
+let topoResizeTimer = null;
+
+window.addEventListener('resize', () => {
+  if (!currentTopoRows) return;
+  clearTimeout(topoResizeTimer);
+  topoResizeTimer = setTimeout(() => renderTopo(currentTopoRows), 250);
+});
+
 function renderTopo(rows) {
   const el = $('topoChart');
   if (!el) return;
+  currentTopoRows = rows;
+
   let chart = echarts.getInstanceByDom(el) || echarts.init(el);
   chart.clear();
 
+  if (!rows || !rows.length) {
+    el.style.height = '120px';
+    chart.resize();
+    return;
+  }
+
+  // ---------- 分组 ----------
   const groups = {};
   rows.forEach(r => {
     const key = r.org || '未知';
     (groups[key] = groups[key] || []).push(r);
   });
-
   const orgNames = Object.keys(groups);
 
-  // ---- 列布局参数 ----
-  const colWidth  = 160;
-  const padLeft   = 60;
-  const padTop    = 40;
-  const orgIpGap  = 70;
-  const ipGap     = 32;
-  const orgSize   = 40;
-  const ipSize    = 8;
+  // ---------- 布局参数 ----------
+  const containerW = Math.max(600, el.clientWidth || 1000);
+  const padL = 24, padT = 24, padR = 24, padB = 24;
+  const orgW = 132, orgH = 40;
+  const gapOrgIp = 28;
+  const ipW = 92, ipH = 26;
+  const ipGapX = 8, ipGapY = 8;
+  const rowGap = 16;
 
-  let maxRows = 0;
-  orgNames.forEach(o => { maxRows = Math.max(maxRows, groups[o].length); });
-  const totalHeight = padTop + orgIpGap + maxRows * ipGap + 40;
-  const totalWidth  = padLeft * 2 + orgNames.length * colWidth;
+  const ipStartX = padL + orgW + gapOrgIp;
+  const ipAreaW = containerW - ipStartX - padR;
+  const ipsPerRow = Math.max(1, Math.floor((ipAreaW + ipGapX) / (ipW + ipGapX)));
 
   const nodes = [];
   const links = [];
+  let cursorY = padT;
 
+  // ---------- 逐组织生成行 ----------
   orgNames.forEach((name, i) => {
-    const cx = padLeft + i * colWidth + colWidth / 2;
+    const color = palette(i);
+    const items = groups[name];
+    const ipRowCount = Math.ceil(items.length / ipsPerRow);
+    const ipAreaH = ipRowCount * ipH + Math.max(0, ipRowCount - 1) * ipGapY;
+    const rowH = Math.max(orgH, ipAreaH);
 
+    // 组织盒子
     nodes.push({
       id: `org-${i}`,
       name,
-      x: cx,
-      y: padTop,
-      symbolSize: orgSize,
+      x: padL + orgW / 2,
+      y: cursorY + rowH / 2,
+      symbol: 'roundRect',
+      symbolSize: [orgW, orgH],
       itemStyle: {
-        color: palette(i),
-        borderColor: '#fff',
-        borderWidth: 3,
-        shadowBlur: 10,
-        shadowColor: 'rgba(0,0,0,0.12)',
+        color: hexToRgba(color, 0.14),
+        borderColor: color,
+        borderWidth: 2,
+        shadowBlur: 6,
+        shadowColor: 'rgba(0,0,0,0.06)',
       },
       label: {
         show: true,
-        formatter: name.length > 7 ? name.slice(0, 7) + '…' : name,
-        fontSize: 11,
+        formatter: name.length > 9 ? name.slice(0, 9) + '…' : name,
+        fontSize: 12,
         fontWeight: 600,
-        color: '#fff',
+        color: '#1f2937',
         position: 'inside',
       },
+      z: 3,
     });
 
-    groups[name].forEach((r, j) => {
+    // IP 胶囊
+    items.forEach((r, j) => {
+      const rr = Math.floor(j / ipsPerRow);
+      const cc = j % ipsPerRow;
+      const ipCx = ipStartX + cc * (ipW + ipGapX) + ipW / 2;
+      const ipCy = cursorY + rr * (ipH + ipGapY) + ipH / 2;
       const ipId = `ip-${i}-${j}`;
+
       nodes.push({
         id: ipId,
         name: r.ip,
-        x: cx,
-        y: padTop + orgIpGap + j * ipGap,
-        symbolSize: ipSize,
+        x: ipCx,
+        y: ipCy,
+        symbol: 'roundRect',
+        symbolSize: [ipW, ipH],
         itemStyle: {
-          color: palette(i),
-          opacity: 0.85,
-          borderColor: '#fff',
-          borderWidth: 1.5,
+          color: hexToRgba(color, 0.08),
+          borderColor: hexToRgba(color, 0.55),
+          borderWidth: 1,
         },
-        label: { show: false },
+        label: {
+          show: true,
+          formatter: shortenTopoIP(r.ip),
+          fontSize: 10,
+          color: color,
+          fontFamily: 'ui-monospace, Menlo, Consolas, monospace',
+          position: 'inside',
+        },
         value: r,
       });
+
       links.push({
         source: `org-${i}`,
         target: ipId,
-        lineStyle: { color: palette(i), opacity: 0.28, width: 1, curveness: 0 },
+        lineStyle: {
+          color: hexToRgba(color, 0.42),
+          width: 1,
+          curveness: 0,
+        },
       });
     });
+
+    cursorY += rowH + rowGap;
   });
 
-  const w = el.clientWidth  || 1000;
-  const h = el.clientHeight || 500;
-  const zoom = Math.min(w / totalWidth, h / totalHeight, 1) * 0.95;
+  const totalH = cursorY - rowGap + padB;
+  el.style.height = totalH + 'px';
+  chart.resize();
 
+  // ---------- 渲染 ----------
   chart.setOption({
+    animationDuration: 400,
+    animationEasing: 'cubicOut',
     tooltip: {
-      backgroundColor: 'rgba(255,255,255,0.96)',
+      backgroundColor: 'rgba(255,255,255,0.98)',
       borderColor: '#e5e7eb',
       borderWidth: 1,
       padding: [10, 14],
       textStyle: { color: '#374151', fontSize: 12 },
       extraCssText: 'box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-radius: 8px;',
       formatter: p => {
-        if (p.dataType === 'node' && p.data.value) {
-          const r = p.data.value;
-          return `<b style="color:#111">${r.name}</b><br/>
-            <span style="color:#6b7280">协议</span> ${r.protocol}<br/>
-            <span style="color:#6b7280">IP</span> ${r.ip}<br/>
-            <span style="color:#6b7280">组织</span> ${r.org}<br/>
-            <span style="color:#6b7280">ASN</span> ${r.asn}<br/>
-            <span style="color:#6b7280">地区</span> ${r.region} · ${r.detail}<br/>
-            <span style="color:#6b7280">栈</span> IPv${r.stack}`;
+        if (p.dataType === 'node') {
+          if (p.data.value) {
+            const r = p.data.value;
+            return `<b style="color:#111">${r.name}</b><br/>
+              <span style="color:#6b7280">协议</span> ${r.protocol}<br/>
+              <span style="color:#6b7280">IP</span> ${r.ip}<br/>
+              <span style="color:#6b7280">组织</span> ${r.org}<br/>
+              <span style="color:#6b7280">ASN</span> ${r.asn}<br/>
+              <span style="color:#6b7280">地区</span> ${r.region} · ${r.detail}<br/>
+              <span style="color:#6b7280">栈</span> IPv${r.stack}`;
+          }
+          return `<b>${p.name}</b><br/><span style="color:#6b7280">组织</span>`;
         }
         return p.name;
       },
@@ -676,24 +727,34 @@ function renderTopo(rows) {
     series: [{
       type: 'graph',
       layout: 'none',
-      roam: true,
-      draggable: false,
-      zoom: zoom,
-      center: [totalWidth / 2, totalHeight / 2],
+      roam: false,
       data: nodes,
       links,
-      lineStyle: { color: 'source', opacity: 0.28, width: 1, curveness: 0 },
+      edgeSymbol: ['none', 'arrow'],
+      edgeSymbolSize: 5,
+      lineStyle: { color: 'source', opacity: 0.4, width: 1, curveness: 0 },
       emphasis: {
         focus: 'adjacency',
-        scale: 1.4,
-        label: { show: true, fontSize: 11, color: '#374151', position: 'right' },
-        lineStyle: { width: 2, opacity: 0.8 },
+        scale: 1.06,
+        lineStyle: { width: 2, opacity: 0.9 },
       },
-      labelLayout: { hideOverlap: true },
     }],
   }, true);
+}
 
-  window.addEventListener('resize', () => chart.resize());
+// 拓扑图 IP 简写
+function shortenTopoIP(ip) {
+  if (!ip || ip === '-') return '—';
+  if (ip.length <= 12) return ip;
+  return ip.slice(0, 7) + '…' + ip.slice(-3);
+}
+
+// hex → rgba
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function palette(i) {
@@ -765,6 +826,7 @@ $('clearBtn').onclick = () => {
       if (chart) chart.clear();
     }
   });
+  currentTopoRows = null;
   hideIpPopover();
   setStatus('等待输入...');
 };
