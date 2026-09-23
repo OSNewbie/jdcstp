@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>节点拓扑分析 · Pro</title>
+<title>节点拓扑分析</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
 <div class="container">
-  <h1>节点拓扑分析 · Pro</h1>
+  <h1>节点拓扑分析</h1>
 
   <div class="input-row">
     <input id="subUrl" placeholder="订阅链接（可选，需支持 CORS）">
@@ -28,31 +28,34 @@
   <div id="status">等待输入...</div>
 
   <table id="resultTable">
+    <colgroup>
+      <col style="width:56px">
+      <col>
+      <col style="width:96px">
+      <col style="width:80px">
+      <col style="width:96px">
+      <col>
+      <col style="width:72px">
+      <col>
+      <col>
+    </colgroup>
     <thead>
       <tr>
-        <th>序号</th><th>节点名</th><th>协议</th><th>地区</th><th>AS编号</th>
-        <th>组织</th><th>栈</th><th>入口IP</th><th>详细地区</th>
+        <th>序号</th>
+        <th>节点名</th>
+        <th>协议</th>
+        <th>地区</th>
+        <th>AS编号</th>
+        <th>组织</th>
+        <th>栈</th>
+        <th>入口IP</th>
+        <th>详细地区</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <h2>Clash Meta 订阅（Base64）</h2>
-  <div class="input-row">
-    <textarea id="clashB64" class="out" readonly placeholder="解析后自动生成，可直接复制导入客户端"></textarea>
-  </div>
-  <div class="input-row">
-    <button id="copyB64">复制 Base64</button>
-    <button id="copyYaml" class="secondary">复制 YAML 原文</button>
-    <span id="copyTip" class="tip"></span>
-  </div>
-  <details class="yaml-box">
-    <summary>查看 Clash Meta YAML 原文</summary>
-    <textarea id="clashYaml" class="out" readonly></textarea>
-  </details>
-
   <h2>个人画像</h2>
-  <div id="profile" class="profile"></div>
   <div id="profileTags" class="tags"></div>
   <div class="charts-row">
     <div id="protocolChart" class="chart"></div>
