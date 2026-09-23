@@ -1,3 +1,4 @@
+// VERSION: 2024-FINAL
 const $ = id => document.getElementById(id);
 
 // ============================================================
@@ -11,7 +12,6 @@ function b64decode(str) {
   try { return decodeURIComponent(escape(bin)); } catch { return bin; }
 }
 
-// 全局错误提示
 window.addEventListener('error', e => {
   const el = document.getElementById('status');
   if (el) el.textContent = '运行错误: ' + (e.message || e.error);
@@ -436,7 +436,6 @@ function renderTable(rows) {
   `).join('');
 }
 
-// ---- IP 单元格渲染 ----
 function isIPv6(ip) {
   return typeof ip === 'string' && ip.includes(':') && ip !== '-';
 }
@@ -454,7 +453,6 @@ function renderIpCell(ip) {
   return `<span class="ipv4-text">${escapeHtml(ip)}</span>`;
 }
 
-// ---- IPv6 浮层 ----
 let ipPopoverEl = null;
 function getIpPopover() {
   if (!ipPopoverEl) {
@@ -588,7 +586,6 @@ function renderTopo(rows) {
     return;
   }
 
-  // ---------- 分组 ----------
   const groups = {};
   rows.forEach(r => {
     const key = r.org || '未知';
@@ -596,7 +593,6 @@ function renderTopo(rows) {
   });
   const orgNames = Object.keys(groups);
 
-  // ---------- 布局参数 ----------
   const containerW = Math.max(600, el.clientWidth || 1000);
   const padL = 24, padT = 24, padR = 24, padB = 24;
   const orgW = 132, orgH = 40;
@@ -613,7 +609,6 @@ function renderTopo(rows) {
   const links = [];
   let cursorY = padT;
 
-  // ---------- 逐组织生成行 ----------
   orgNames.forEach((name, i) => {
     const color = palette(i);
     const items = groups[name];
@@ -621,7 +616,6 @@ function renderTopo(rows) {
     const ipAreaH = ipRowCount * ipH + Math.max(0, ipRowCount - 1) * ipGapY;
     const rowH = Math.max(orgH, ipAreaH);
 
-    // 组织盒子
     nodes.push({
       id: `org-${i}`,
       name,
@@ -647,7 +641,6 @@ function renderTopo(rows) {
       z: 3,
     });
 
-    // IP 胶囊
     items.forEach((r, j) => {
       const rr = Math.floor(j / ipsPerRow);
       const cc = j % ipsPerRow;
@@ -696,7 +689,6 @@ function renderTopo(rows) {
   el.style.height = totalH + 'px';
   chart.resize();
 
-  // ---------- 渲染 ----------
   chart.setOption({
     animationDuration: 400,
     animationEasing: 'cubicOut',
@@ -742,14 +734,12 @@ function renderTopo(rows) {
   }, true);
 }
 
-// 拓扑图 IP 简写
 function shortenTopoIP(ip) {
   if (!ip || ip === '-') return '—';
   if (ip.length <= 12) return ip;
   return ip.slice(0, 7) + '…' + ip.slice(-3);
 }
 
-// hex → rgba
 function hexToRgba(hex, alpha) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
