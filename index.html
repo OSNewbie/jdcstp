@@ -2,22 +2,24 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>节点拓扑分析</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>节点拓扑分析 · Pro</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
 <div class="container">
-  <h1>节点拓扑分析</h1>
+  <h1>节点拓扑分析 · Pro</h1>
 
   <div class="input-row">
-    <input id="subUrl" placeholder="订阅链接（可选）">
+    <input id="subUrl" placeholder="订阅链接（可选，需支持 CORS）">
     <button id="loadUrl">拉取订阅</button>
   </div>
 
   <div class="input-row">
-    <textarea id="subText" placeholder="或粘贴 Base64 订阅内容 / Clash YAML"></textarea>
+    <textarea id="subText" placeholder="或粘贴 Base64 订阅内容 / Clash YAML / 纯链接列表"></textarea>
   </div>
+
   <div class="input-row">
     <button id="loadText">解析粘贴内容</button>
     <button id="clearBtn" class="secondary">清空</button>
@@ -28,15 +30,38 @@
   <table id="resultTable">
     <thead>
       <tr>
-        <th>序号</th><th>节点名</th><th>地区</th><th>AS编号</th>
+        <th>序号</th><th>节点名</th><th>协议</th><th>地区</th><th>AS编号</th>
         <th>组织</th><th>栈</th><th>入口IP</th><th>详细地区</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
+  <h2>Clash Meta 订阅（Base64）</h2>
+  <div class="input-row">
+    <textarea id="clashB64" class="out" readonly placeholder="解析后自动生成，可直接复制导入客户端"></textarea>
+  </div>
+  <div class="input-row">
+    <button id="copyB64">复制 Base64</button>
+    <button id="copyYaml" class="secondary">复制 YAML 原文</button>
+    <span id="copyTip" class="tip"></span>
+  </div>
+  <details class="yaml-box">
+    <summary>查看 Clash Meta YAML 原文</summary>
+    <textarea id="clashYaml" class="out" readonly></textarea>
+  </details>
+
+  <h2>个人画像</h2>
+  <div id="profile" class="profile"></div>
+  <div id="profileTags" class="tags"></div>
+  <div class="charts-row">
+    <div id="protocolChart" class="chart"></div>
+    <div id="regionChart" class="chart"></div>
+    <div id="orgChart" class="chart"></div>
+  </div>
+
   <h2>拓扑图</h2>
-  <div id="topoChart" style="width:100%;height:650px;"></div>
+  <div id="topoChart" class="topo"></div>
 </div>
 <script src="app.js"></script>
 </body>
