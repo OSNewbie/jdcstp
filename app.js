@@ -1,6 +1,27 @@
 const $ = id => document.getElementById(id);
 
 // ============================================================
+// 工具：URL-safe base64 + UTF-8 安全解码
+// ============================================================
+function b64decode(str) {
+  str = String(str).trim().replace(/\s+/g, '');
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  const bin = atob(str);
+  try { return decodeURIComponent(escape(bin)); } catch { return bin; }
+}
+
+// 全局错误提示
+window.addEventListener('error', e => {
+  const el = document.getElementById('status');
+  if (el) el.textContent = '运行错误: ' + (e.message || e.error);
+});
+window.addEventListener('unhandledrejection', e => {
+  const el = document.getElementById('status');
+  if (el) el.textContent = 'Promise 错误: ' + (e.reason?.message || e.reason);
+});
+
+// ============================================================
 // 中文映射表
 // ============================================================
 const ASN_MAP = {
@@ -36,78 +57,55 @@ const CITY_MAP = {
   'Sao Paulo':'圣保罗','Buenos Aires':'布宜诺斯艾利斯','Santiago':'圣地亚哥',
   'Johannesburg':'约翰内斯堡','Cairo':'开罗','Istanbul':'伊斯坦布尔',
   'Tel Aviv':'特拉维夫','Riyadh':'利雅得','Osaka':'大阪','Nagoya':'名古屋',
-  'Busan':'釜山','Osaka':'大阪','Kyoto':'京都','Fukuoka':'福冈',
-  'Zurich':'苏黎世','Geneva':'日内瓦','Stockholm':'斯德哥尔摩','Oslo':'奥斯陆',
+  'Busan':'釜山','Kyoto':'京都','Fukuoka':'福冈','Zurich':'苏黎世',
+  'Geneva':'日内瓦','Stockholm':'斯德哥尔摩','Oslo':'奥斯陆',
   'Copenhagen':'哥本哈根','Helsinki':'赫尔辛基','Dublin':'都柏林',
   'Brussels':'布鲁塞尔','Vienna':'维也纳','Prague':'布拉格','Warsaw':'华沙',
   'Lisbon':'里斯本','Barcelona':'巴塞罗那','Rome':'罗马','Munich':'慕尼黑',
 };
 
 const ORG_MAP = {
-  'Amazon':'亚马逊','Amazon.com, Inc.':'亚马逊','Amazon.com':'亚马逊',
-  'Amazon Data Services':'亚马逊云','AWS':'亚马逊云','Amazon Web Services':'亚马逊云',
+  'Amazon.com, Inc.':'亚马逊','Amazon.com':'亚马逊','Amazon Data Services':'亚马逊云',
+  'Amazon Web Services':'亚马逊云','Amazon':'亚马逊','AWS':'亚马逊云',
   'Google LLC':'谷歌','Google Cloud':'谷歌云','Google':'谷歌',
   'Microsoft Corporation':'微软','Microsoft':'微软','Microsoft Azure':'微软云',
   'Oracle Corporation':'甲骨文','Oracle Cloud':'甲骨文云','Oracle':'甲骨文',
   'Cloudflare, Inc.':'Cloudflare','Cloudflare':'Cloudflare',
   'DigitalOcean, LLC':'DigitalOcean','DigitalOcean':'DigitalOcean',
   'Linode, LLC':'Linode','Linode':'Linode','Akamai':'Akamai',
-  'Vultr Holdings, LLC':'Vultr','Vultr':'Vultr','Hetzner Online GmbH':'Hetzner',
-  'Hetzner':'Hetzner','OVH SAS':'OVH','OVH':'OVH',
-  'Alibaba (US) Technology Co., Ltd.':'阿里云','Alibaba.com Singapore E-Commerce Private Limited':'阿里云',
+  'Vultr Holdings, LLC':'Vultr','Vultr':'Vultr',
+  'Hetzner Online GmbH':'Hetzner','Hetzner':'Hetzner',
+  'OVH SAS':'OVH','OVH':'OVH',
+  'Alibaba (US) Technology Co., Ltd.':'阿里云',
+  'Alibaba.com Singapore E-Commerce Private Limited':'阿里云',
   'Tencent Cloud':'腾讯云','Huawei Cloud':'华为云','Baidu':'百度云',
-  'Chunghwa Telecom Co. Ltd.':'中华电信','Hong Kong Telecommunications (HKT) Limited':'香港电讯',
+  'Chunghwa Telecom Co. Ltd.':'中华电信',
+  'Hong Kong Telecommunications (HKT) Limited':'香港电讯',
   'Netvigator':'网上行','Facebook':'Facebook','Netflix':'Netflix',
 };
 
-const PROTOCOL_MAP = {
-  vmess:'VMess', vless:'VLESS', trojan:'Trojan', ss:'Shadowsocks',
-  ssr:'ShadowsocksR', hysteria:'Hysteria', hysteria2:'Hysteria2', hy2:'Hysteria2',
-  tuic:'TUIC', socks:'SOCKS5', socks5:'SOCKS5', http:'HTTP', https:'HTTPS',
-  wireguard:'WireGuard', snell:'Snell', ssh:'SSH', mieru:'Mieru', anytls:'AnyTLS',
-};
-
-function protocolLabel(type) {
-  const t = String(type || '').toLowerCase();
-  return PROTOCOL_MAP[t] || type || '未知';
-}
-
 // ============================================================
-// 1. 解析订阅内容（Base64 / Clash YAML / 纯链接列表）
+// 1. 解析订阅内容
 // ============================================================
 function parseSubscription(text) {
   text = text.trim();
-  window._sourceYaml = '';
   if (!text) return [];
 
-  // 1.1 尝试识别 Clash YAML
   if (/^proxies\s*:/m.test(text) || /^Proxy\s*:/m.test(text) || /^proxy-groups\s*:/m.test(text)) {
-    window._sourceYaml = text;
     return parseClashYaml(text);
   }
 
-  // 1.2 尝试 Base64 解码
   let decoded = text;
   if (!/^(vmess|vless|ss|trojan|hysteria2?|tuic|socks|http):\/\//im.test(text)) {
-    try {
-      const b64 = text.replace(/\s+/g, '');
-      decoded = atob(b64);
-      try { decoded = decodeURIComponent(escape(decoded)); } catch {}
-    } catch {
-      decoded = text;
-    }
+    try { decoded = b64decode(text); } catch { decoded = text; }
   }
 
-  // 如果 Base64 解码后是 Clash YAML
   if (/^proxies\s*:/m.test(decoded) || /^Proxy\s*:/m.test(decoded)) {
-    window._sourceYaml = decoded;
     return parseClashYaml(decoded);
   }
 
-  // 1.3 逐行解析 URI
   const nodes = [];
-  const lines = decoded.split(/\r?\n/);
-  for (const line of lines) {
+  for (const line of decoded.split(/\r?\n/)) {
     const t = line.trim();
     if (!t || t.startsWith('#')) continue;
     const node = parseUri(t);
@@ -123,7 +121,6 @@ function parseUri(uri) {
   try {
     const scheme = (uri.match(/^([a-z0-9+]+):\/\//i) || [])[1]?.toLowerCase();
     if (!scheme) return null;
-
     if (scheme === 'vmess') return parseVmess(uri);
 
     const rest = uri.slice(scheme.length + 3);
@@ -132,11 +129,9 @@ function parseUri(uri) {
     const main = hashIdx >= 0 ? rest.slice(0, hashIdx) : rest;
 
     const qIdx = main.indexOf('?');
-    const query = qIdx >= 0 ? main.slice(qIdx + 1) : '';
     const beforeQuery = qIdx >= 0 ? main.slice(0, qIdx) : main;
 
     const atIdx = beforeQuery.lastIndexOf('@');
-    const userInfo = atIdx >= 0 ? beforeQuery.slice(0, atIdx) : '';
     const hostPort = atIdx >= 0 ? beforeQuery.slice(atIdx + 1) : beforeQuery;
 
     let host = '', port = '';
@@ -154,16 +149,12 @@ function parseUri(uri) {
       }
     }
 
-    const params = new URLSearchParams(query);
-    const node = {
+    return {
       name: name || `${host}:${port}`,
       server: host,
       port: String(port),
       type: scheme,
-      _raw: uri,
     };
-    node._clashProxy = buildClashProxyFromUri(scheme, userInfo, host, port, params, name);
-    return node;
   } catch {
     return null;
   }
@@ -174,162 +165,20 @@ function parseUri(uri) {
 // ============================================================
 function parseVmess(uri) {
   try {
-    const b64 = uri.slice('vmess://'.length);
-    const json = JSON.parse(atob(b64));
-    const name = json.ps || json.remarks || `${json.add}:${json.port}`;
-    const node = {
-      name,
+    const json = JSON.parse(b64decode(uri.slice('vmess://'.length)));
+    return {
+      name: json.ps || json.remarks || `${json.add}:${json.port}`,
       server: json.add || json.host,
       port: String(json.port || ''),
       type: 'vmess',
-      _raw: uri,
     };
-    const proxy = {
-      name,
-      type: 'vmess',
-      server: json.add || json.host,
-      port: Number(json.port) || 0,
-      uuid: json.id,
-      alterId: Number(json.aid || 0),
-      cipher: 'auto',
-      udp: true,
-    };
-    if (json.tls === 'tls') {
-      proxy.tls = true;
-      proxy.servername = json.sni || json.host || json.add;
-    }
-    if (json.net === 'ws') {
-      proxy.network = 'ws';
-      proxy['ws-opts'] = {
-        path: json.path || '/',
-        headers: { Host: json.host || json.add },
-      };
-    } else if (json.net === 'grpc') {
-      proxy.network = 'grpc';
-      proxy['grpc-opts'] = { 'grpc-service-name': json.path || '' };
-    } else {
-      proxy.network = json.net || 'tcp';
-    }
-    node._clashProxy = proxy;
-    return node;
   } catch {
     return null;
   }
 }
 
 // ============================================================
-// 4. 从 URI 构建 Clash Meta proxy 对象
-// ============================================================
-function buildClashProxyFromUri(scheme, userInfo, host, port, params, name) {
-  const proxy = {
-    name: name || `${host}:${port}`,
-    type: scheme,
-    server: host,
-    port: Number(port) || 0,
-  };
-  switch (scheme) {
-    case 'ss': {
-      let method = '', password = '';
-      try {
-        const decoded = atob(userInfo);
-        if (decoded.includes(':')) {
-          [method, password] = decoded.split(':');
-        } else {
-          [method, password] = userInfo.split(':');
-        }
-      } catch {
-        [method, password] = userInfo.split(':');
-      }
-      proxy.type = 'ss';
-      proxy.cipher = method || 'aes-256-gcm';
-      proxy.password = password || '';
-      break;
-    }
-    case 'vless': {
-      proxy.type = 'vless';
-      proxy.uuid = userInfo;
-      if (params.get('encryption')) proxy.encryption = params.get('encryption');
-      if (params.get('flow')) proxy.flow = params.get('flow');
-      if (params.get('security') === 'tls') {
-        proxy.tls = true;
-        proxy.servername = params.get('sni') || host;
-      }
-      const net = params.get('type') || 'tcp';
-      if (net === 'ws') {
-        proxy.network = 'ws';
-        proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || host } };
-      } else if (net === 'grpc') {
-        proxy.network = 'grpc';
-        proxy['grpc-opts'] = { 'grpc-service-name': params.get('serviceName') || '' };
-      }
-      break;
-    }
-    case 'trojan': {
-      proxy.type = 'trojan';
-      proxy.password = userInfo;
-      if (params.get('sni')) proxy.sni = params.get('sni');
-      if (params.get('allowInsecure') === '1' || params.get('insecure') === '1') proxy['skip-cert-verify'] = true;
-      const net = params.get('type') || 'tcp';
-      if (net === 'ws') {
-        proxy.network = 'ws';
-        proxy['ws-opts'] = { path: params.get('path') || '/', headers: { Host: params.get('host') || host } };
-      }
-      break;
-    }
-    case 'hysteria2':
-    case 'hy2': {
-      proxy.type = 'hysteria2';
-      proxy.password = userInfo;
-      if (params.get('sni')) proxy.sni = params.get('sni');
-      if (params.get('insecure') === '1') proxy['skip-cert-verify'] = true;
-      break;
-    }
-    case 'hysteria': {
-      proxy.type = 'hysteria';
-      proxy['auth-str'] = userInfo;
-      if (params.get('protocol')) proxy.protocol = params.get('protocol');
-      if (params.get('upmbps')) proxy.up = params.get('upmbps');
-      if (params.get('downmbps')) proxy.down = params.get('downmbps');
-      break;
-    }
-    case 'tuic': {
-      proxy.type = 'tuic';
-      const [uuid, password] = userInfo.split(':');
-      proxy.uuid = uuid;
-      proxy.password = password || '';
-      if (params.get('sni')) proxy.sni = params.get('sni');
-      if (params.get('alpn')) proxy.alpn = params.get('alpn').split(',');
-      break;
-    }
-    case 'socks':
-    case 'socks5': {
-      proxy.type = 'socks5';
-      if (userInfo) {
-        const [username, password] = userInfo.split(':');
-        proxy.username = username;
-        proxy.password = password || '';
-      }
-      break;
-    }
-    case 'http':
-    case 'https': {
-      proxy.type = 'http';
-      if (userInfo) {
-        const [username, password] = userInfo.split(':');
-        proxy.username = username;
-        proxy.password = password || '';
-      }
-      if (scheme === 'https') proxy.tls = true;
-      break;
-    }
-    default:
-      proxy.type = scheme;
-  }
-  return proxy;
-}
-
-// ============================================================
-// 5. 解析 Clash YAML 的 proxies 段
+// 4. 解析 Clash YAML 的 proxies 段
 // ============================================================
 function parseClashYaml(text) {
   const proxies = [];
@@ -369,7 +218,6 @@ function parseClashYaml(text) {
       server: p.server,
       port: String(p.port || ''),
       type: p.type || 'unknown',
-      _clashProxy: p,
     }));
 }
 
@@ -378,30 +226,37 @@ function stripQuote(s) {
 }
 
 // ============================================================
-// 6. DNS 解析（Cloudflare DoH）
+// 5. DNS 解析（多 DoH 端点）
 // ============================================================
+const DOH_ENDPOINTS = [
+  'https://cloudflare-dns.com/dns-query',
+  'https://dns.google/resolve',
+  'https://1.1.1.1/dns-query',
+];
+
 async function resolveIP(host) {
   if (/^\d+\.\d+\.\d+\.\d+$/.test(host)) return host;
   if (host.includes(':')) return host;
-  try {
-    const res = await fetch(
-      `https://1.1.1.1/dns-query?name=${encodeURIComponent(host)}&type=A`,
-      { headers: { accept: 'application/dns-json' } }
-    );
-    const data = await res.json();
-    const a = (data.Answer || []).find(x => x.type === 1);
-    return a ? a.data : '';
-  } catch {
-    return '';
+  for (const url of DOH_ENDPOINTS) {
+    try {
+      const res = await fetch(
+        `${url}?name=${encodeURIComponent(host)}&type=A`,
+        { headers: { accept: 'application/dns-json' } }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      const a = (data.Answer || []).find(x => x.type === 1);
+      if (a && a.data) return a.data;
+    } catch {}
   }
+  return '';
 }
 
 // ============================================================
-// 7. GeoIP 查询（多源 fallback）
+// 6. GeoIP 查询
 // ============================================================
 const GEO_APIS = [
   {
-    name: 'ipwho.is',
     url: ip => `https://ipwho.is/${ip}`,
     parse: (d, ip) => ({
       ip: d.ip || ip,
@@ -415,7 +270,6 @@ const GEO_APIS = [
     }),
   },
   {
-    name: 'ipapi.co',
     url: ip => `https://ipapi.co/${ip}/json/`,
     parse: (d, ip) => ({
       ip: d.ip || ip,
@@ -429,7 +283,6 @@ const GEO_APIS = [
     }),
   },
   {
-    name: 'ip.sb',
     url: ip => `https://api.ip.sb/geoip/${ip}`,
     parse: (d, ip) => ({
       ip: d.ip || ip,
@@ -458,19 +311,19 @@ async function queryGeoIP(ip) {
 }
 
 // ============================================================
-// 8. 中文本地化
+// 7. 中文本地化
 // ============================================================
 function localizeOrg(asn, org) {
   const key = `AS${String(asn).replace(/^AS/i, '')}`;
   if (ASN_MAP[key]) return ASN_MAP[key];
   const raw = (org || '').trim();
   if (ORG_MAP[raw]) return ORG_MAP[raw];
-  // 常见替换
+
   let s = raw;
   s = s.replace(/Amazon\.com,? Inc\.?/gi, '亚马逊');
   s = s.replace(/Amazon\.com/gi, '亚马逊');
   s = s.replace(/Amazon Data Services/gi, '亚马逊云');
-  s = s.replace(/AWS/gi, '亚马逊云');
+  s = s.replace(/\bAWS\b/gi, '亚马逊云');
   s = s.replace(/Google LLC/gi, '谷歌');
   s = s.replace(/Google Cloud/gi, '谷歌云');
   s = s.replace(/Microsoft Corporation/gi, '微软');
@@ -500,35 +353,24 @@ function localizeCity(city, region) {
   if (CITY_MAP[region]) return CITY_MAP[region];
   if (city && /[\u4e00-\u9fa5]/.test(city)) return city;
   if (region && /[\u4e00-\u9fa5]/.test(region)) return region;
-  // 常见英文城市替换
+
   let c = city || '';
-  c = c.replace(/Hong Kong/gi, '香港');
-  c = c.replace(/Singapore/gi, '新加坡');
-  c = c.replace(/Tokyo/gi, '东京');
-  c = c.replace(/Seoul/gi, '首尔');
-  c = c.replace(/Taipei/gi, '台北');
-  c = c.replace(/London/gi, '伦敦');
-  c = c.replace(/Frankfurt/gi, '法兰克福');
-  c = c.replace(/Amsterdam/gi, '阿姆斯特丹');
-  c = c.replace(/Paris/gi, '巴黎');
-  c = c.replace(/Milan/gi, '米兰');
-  c = c.replace(/Madrid/gi, '马德里');
-  c = c.replace(/Berlin/gi, '柏林');
-  c = c.replace(/Moscow/gi, '莫斯科');
-  c = c.replace(/Toronto/gi, '多伦多');
-  c = c.replace(/Sydney/gi, '悉尼');
-  c = c.replace(/Mumbai/gi, '孟买');
-  c = c.replace(/Dubai/gi, '迪拜');
-  c = c.replace(/Bangkok/gi, '曼谷');
-  c = c.replace(/Hanoi/gi, '河内');
-  c = c.replace(/Jakarta/gi, '雅加达');
-  c = c.replace(/Manila/gi, '马尼拉');
-  c = c.replace(/Kuala Lumpur/gi, '吉隆坡');
+  const pairs = [
+    [/Hong Kong/gi,'香港'],[/Singapore/gi,'新加坡'],[/Tokyo/gi,'东京'],
+    [/Seoul/gi,'首尔'],[/Taipei/gi,'台北'],[/London/gi,'伦敦'],
+    [/Frankfurt/gi,'法兰克福'],[/Amsterdam/gi,'阿姆斯特丹'],[/Paris/gi,'巴黎'],
+    [/Milan/gi,'米兰'],[/Madrid/gi,'马德里'],[/Berlin/gi,'柏林'],
+    [/Moscow/gi,'莫斯科'],[/Toronto/gi,'多伦多'],[/Sydney/gi,'悉尼'],
+    [/Mumbai/gi,'孟买'],[/Dubai/gi,'迪拜'],[/Bangkok/gi,'曼谷'],
+    [/Hanoi/gi,'河内'],[/Jakarta/gi,'雅加达'],[/Manila/gi,'马尼拉'],
+    [/Kuala Lumpur/gi,'吉隆坡'],
+  ];
+  for (const [re, zh] of pairs) c = c.replace(re, zh);
   return c || region || '未知';
 }
 
 // ============================================================
-// 9. 分析节点（DNS + GeoIP）
+// 8. 分析节点
 // ============================================================
 async function analyzeNodes(nodes) {
   setStatus(`共 ${nodes.length} 个节点，正在解析 DNS...`);
@@ -551,7 +393,7 @@ async function analyzeNodes(nodes) {
     if (geo) geoMap[ip] = geo;
   }
 
-  const results = nodes.map((n, idx) => {
+  return nodes.map((n, idx) => {
     const ip = ipMap[n.server] || '';
     const geo = geoMap[ip] || {};
     const asn = geo.asn || '0';
@@ -560,8 +402,7 @@ async function analyzeNodes(nodes) {
       name: n.name,
       server: n.server,
       port: n.port,
-      type: n.type,
-      protocol: protocolLabel(n.type),
+      protocol: String(n.type || 'unknown').toLowerCase(),
       ip: ip || '-',
       region: localizeRegion(geo.country_code),
       country_code: geo.country_code || '',
@@ -573,23 +414,21 @@ async function analyzeNodes(nodes) {
       lon: geo.lon || 0,
     };
   });
-
-  return results;
 }
 
 // ============================================================
-// 10. 渲染表格
+// 9. 渲染表格
 // ============================================================
 function renderTable(rows) {
   const tbody = document.querySelector('#resultTable tbody');
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td>${r.id}</td>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${escapeHtml(r.protocol)}</td>
+      <td title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</td>
+      <td><span class="proto">${escapeHtml(r.protocol)}</span></td>
       <td>${escapeHtml(r.region)}</td>
       <td>${escapeHtml(r.asn)}</td>
-      <td>${escapeHtml(r.org)}</td>
+      <td title="${escapeHtml(r.org)}">${escapeHtml(r.org)}</td>
       <td><span class="stack-${r.stack}">IPv${r.stack}</span></td>
       <td>${escapeHtml(r.ip)}</td>
       <td>${escapeHtml(r.detail)}</td>
@@ -598,7 +437,7 @@ function renderTable(rows) {
 }
 
 // ============================================================
-// 11. 个人画像
+// 10. 个人画像
 // ============================================================
 function renderProfile(rows) {
   const total = rows.length;
@@ -614,6 +453,7 @@ function renderProfile(rows) {
     orgCount[r.org] = (orgCount[r.org] || 0) + 1;
   });
 
+  const topOrg = Object.entries(orgCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
   const tags = [
     `节点总数: ${total}`,
     `IPv4: ${ipv4}`,
@@ -621,7 +461,7 @@ function renderProfile(rows) {
     `协议种类: ${Object.keys(protocolCount).length}`,
     `地区数: ${Object.keys(regionCount).length}`,
     `组织数: ${Object.keys(orgCount).length}`,
-    `主要组织: ${Object.entries(orgCount).sort((a,b)=>b[1]-a[1])[0]?.[0] || '-'}`,
+    `主要组织: ${topOrg}`,
   ];
   $('profileTags').innerHTML = tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
 
@@ -633,43 +473,36 @@ function renderProfile(rows) {
 function renderPie(id, dataMap, title) {
   const el = $(id);
   if (!el) return;
-  let chart = echarts.getInstanceByDom(el);
-  if (!chart) chart = echarts.init(el);
+  let chart = echarts.getInstanceByDom(el) || echarts.init(el);
   const data = Object.entries(dataMap).map(([name, value]) => ({ name, value }));
   chart.setOption({
     title: { text: title, left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'item' },
     series: [{ type: 'pie', radius: '60%', data, label: { formatter: '{b}: {c}' } }],
-  });
-  window.addEventListener('resize', () => chart.resize());
+  }, true);
 }
 
 function renderBar(id, dataMap, title) {
   const el = $(id);
   if (!el) return;
-  let chart = echarts.getInstanceByDom(el);
-  if (!chart) chart = echarts.init(el);
-  const entries = Object.entries(dataMap).sort((a,b)=>b[1]-a[1]).slice(0, 10);
-  const names = entries.map(x => x[0]);
-  const values = entries.map(x => x[1]);
+  let chart = echarts.getInstanceByDom(el) || echarts.init(el);
+  const entries = Object.entries(dataMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
   chart.setOption({
     title: { text: title, left: 'center', textStyle: { fontSize: 14 } },
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: names, axisLabel: { fontSize: 10, rotate: 30 } },
+    xAxis: { type: 'category', data: entries.map(x => x[0]), axisLabel: { fontSize: 10, rotate: 30 } },
     yAxis: { type: 'value' },
-    series: [{ type: 'bar', data: values, itemStyle: { color: '#3b82f6' } }],
-  });
-  window.addEventListener('resize', () => chart.resize());
+    series: [{ type: 'bar', data: entries.map(x => x[1]), itemStyle: { color: '#3b82f6' } }],
+  }, true);
 }
 
 // ============================================================
-// 12. 拓扑图
+// 11. 拓扑图
 // ============================================================
 function renderTopo(rows) {
   const el = $('topoChart');
   if (!el) return;
-  let chart = echarts.getInstanceByDom(el);
-  if (!chart) chart = echarts.init(el);
+  let chart = echarts.getInstanceByDom(el) || echarts.init(el);
 
   const groups = {};
   rows.forEach(r => {
@@ -677,11 +510,12 @@ function renderTopo(rows) {
     (groups[key] = groups[key] || []).push(r);
   });
 
-  const categories = Object.keys(groups).map(name => ({ name }));
+  const orgNames = Object.keys(groups);
+  const categories = orgNames.map(name => ({ name }));
   const nodes = [];
   const links = [];
 
-  Object.keys(groups).forEach((name, i) => {
+  orgNames.forEach((name, i) => {
     nodes.push({
       id: `org-${i}`,
       name,
@@ -693,7 +527,7 @@ function renderTopo(rows) {
   });
 
   rows.forEach((r, idx) => {
-    const orgIdx = Object.keys(groups).indexOf(r.org || '未知');
+    const orgIdx = orgNames.indexOf(r.org || '未知');
     const ipId = `ip-${idx}`;
     nodes.push({
       id: ipId,
@@ -717,7 +551,7 @@ function renderTopo(rows) {
         return p.name;
       },
     },
-    legend: [{ data: categories.map(c => c.name), orient: 'vertical', left: 0, top: 20, textStyle: { fontSize: 12 } }],
+    legend: [{ data: orgNames, orient: 'vertical', left: 0, top: 20, textStyle: { fontSize: 12 } }],
     series: [{
       type: 'graph',
       layout: 'force',
@@ -730,7 +564,7 @@ function renderTopo(rows) {
       lineStyle: { color: 'source', curveness: 0.2, opacity: 0.5 },
       emphasis: { focus: 'adjacency' },
     }],
-  });
+  }, true);
 
   window.addEventListener('resize', () => chart.resize());
 }
@@ -749,80 +583,9 @@ function setStatus(msg) {
 }
 
 // ============================================================
-// 13. 生成 Clash Meta YAML / Base64
+// 12. 主流程
 // ============================================================
-function yamlStr(v) {
-  if (typeof v === 'string') {
-    if (/[:#\-\{\}\[\],&*?|\<>=!%@`]/.test(v) || v === '') return JSON.stringify(v);
-    return v;
-  }
-  return String(v);
-}
-
-function generateClashYaml(nodes, originalText) {
-  // 如果原始文本是 Clash YAML，直接使用并包装
-  if (window._sourceYaml) {
-    let yaml = window._sourceYaml.trim();
-    if (!/^port\s*:/m.test(yaml)) {
-      yaml = `port: 7890\nsocks-port: 7891\nallow-lan: false\nmode: rule\nlog-level: info\n` + yaml;
-    }
-    if (!/^proxy-groups\s*:/m.test(yaml)) {
-      const names = nodes.map(n => `  - ${yamlStr(n.name)}`).join('\n');
-      yaml += `\nproxy-groups:\n  - name: PROXY\n    type: select\n    proxies:\n${names}\n`;
-    }
-    if (!/^rules\s*:/m.test(yaml)) {
-      yaml += `\nrules:\n  - MATCH,PROXY\n`;
-    }
-    return yaml;
-  }
-
-  const proxies = nodes.map(n => n._clashProxy || {
-    name: n.name,
-    type: n.type,
-    server: n.server,
-    port: Number(n.port) || 0,
-  });
-
-  const proxyList = proxies.map(p => {
-    const lines = [`  - name: ${yamlStr(p.name)}`];
-    for (const [k, v] of Object.entries(p)) {
-      if (k === 'name') continue;
-      if (v === undefined || v === null) continue;
-      if (typeof v === 'object') {
-        lines.push(`    ${k}:`);
-        for (const [k2, v2] of Object.entries(v)) {
-          lines.push(`      ${k2}: ${yamlStr(v2)}`);
-        }
-      } else {
-        lines.push(`    ${k}: ${yamlStr(v)}`);
-      }
-    }
-    return lines.join('\n');
-  }).join('\n');
-
-  const names = nodes.map(n => `  - ${yamlStr(n.name)}`).join('\n');
-
-  return `port: 7890
-socks-port: 7891
-allow-lan: false
-mode: rule
-log-level: info
-proxies:
-${proxyList}
-proxy-groups:
-  - name: PROXY
-    type: select
-    proxies:
-${names}
-rules:
-  - MATCH,PROXY
-`;
-}
-
-// ============================================================
-// 14. 事件与主流程
-// ============================================================
-async function runWithNodes(nodes, originalText) {
+async function runWithNodes(nodes) {
   if (!nodes.length) {
     setStatus('没有解析到任何节点');
     return;
@@ -832,12 +595,6 @@ async function runWithNodes(nodes, originalText) {
     renderTable(results);
     renderTopo(results);
     renderProfile(results);
-
-    const yaml = generateClashYaml(nodes, originalText);
-    $('clashYaml').value = yaml;
-    const b64 = btoa(unescape(encodeURIComponent(yaml)));
-    $('clashB64').value = b64;
-
     setStatus(`检测完成，共 ${results.length} 个节点`);
   } catch (e) {
     setStatus('检测失败: ' + e.message);
@@ -852,7 +609,7 @@ $('loadUrl').onclick = async () => {
     const res = await fetch(url);
     const text = await res.text();
     const nodes = parseSubscription(text);
-    await runWithNodes(nodes, text);
+    await runWithNodes(nodes);
   } catch (e) {
     setStatus('拉取失败（可能是 CORS）: ' + e.message + '，请改用粘贴方式');
   }
@@ -863,15 +620,13 @@ $('loadText').onclick = async () => {
   if (!text) return setStatus('请粘贴订阅内容');
   setStatus('解析中...');
   const nodes = parseSubscription(text);
-  await runWithNodes(nodes, text);
+  await runWithNodes(nodes);
 };
 
 $('clearBtn').onclick = () => {
   $('subText').value = '';
   $('subUrl').value = '';
   document.querySelector('#resultTable tbody').innerHTML = '';
-  $('clashB64').value = '';
-  $('clashYaml').value = '';
   $('profileTags').innerHTML = '';
   ['protocolChart','regionChart','orgChart','topoChart'].forEach(id => {
     const el = $(id);
@@ -881,32 +636,4 @@ $('clearBtn').onclick = () => {
     }
   });
   setStatus('等待输入...');
-};
-
-$('copyB64').onclick = () => {
-  const ta = $('clashB64');
-  if (!ta.value) return;
-  navigator.clipboard.writeText(ta.value).then(() => {
-    $('copyTip').textContent = '已复制 Base64';
-    setTimeout(() => $('copyTip').textContent = '', 2000);
-  }).catch(() => {
-    ta.select();
-    document.execCommand('copy');
-    $('copyTip').textContent = '已复制 Base64';
-    setTimeout(() => $('copyTip').textContent = '', 2000);
-  });
-};
-
-$('copyYaml').onclick = () => {
-  const ta = $('clashYaml');
-  if (!ta.value) return;
-  navigator.clipboard.writeText(ta.value).then(() => {
-    $('copyTip').textContent = '已复制 YAML';
-    setTimeout(() => $('copyTip').textContent = '', 2000);
-  }).catch(() => {
-    ta.select();
-    document.execCommand('copy');
-    $('copyTip').textContent = '已复制 YAML';
-    setTimeout(() => $('copyTip').textContent = '', 2000);
-  });
 };
