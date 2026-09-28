@@ -1,4 +1,4 @@
-/* VERSION: 2024-BGP */
+/* VERSION: 2024-COUNTRY */
 body { font-family: -apple-system, "Segoe UI", sans-serif; background: #f4f5f7; margin: 0; padding: 20px; color: #333; }
 .container { max-width: 1400px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 h1 { text-align: center; font-size: 18px; margin: 0 0 20px; }
@@ -15,7 +15,6 @@ button.secondary:hover { background: #4b5563; }
 
 #status { min-height: 20px; font-size: 13px; color: #666; margin-bottom: 12px; }
 
-/* 表格 */
 table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 24px; table-layout: fixed; border: 1px solid #eef1f5; border-radius: 8px; overflow: hidden; }
 th, td { border-bottom: 1px solid #e1e4e8; padding: 8px 10px; text-align: left; vertical-align: top; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 th { background: #f3f5f9; color: #4b5563; font-weight: 600; font-size: 12px; }
@@ -28,7 +27,6 @@ th { background: #f3f5f9; color: #4b5563; font-weight: 600; font-size: 12px; }
 .stack-4 { color: #3b82f6; font-weight: bold; }
 .stack-6 { color: #f59e0b; font-weight: bold; }
 
-/* IP 列 */
 td:nth-child(8) { white-space: nowrap; overflow: hidden; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #1f2937; }
 .ipv4-text { letter-spacing: 0.2px; }
 .ipv6-chip { display: inline-block; max-width: 100%; padding: 2px 8px; border-radius: 6px; background: #f3f4f6; color: #6b7280; cursor: pointer; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
@@ -42,6 +40,72 @@ td:nth-child(8) { white-space: nowrap; overflow: hidden; font-family: ui-monospa
 .tag { background: #eef2ff; color: #4338ca; border-radius: 999px; padding: 4px 10px; font-size: 12px; white-space: nowrap; }
 .charts-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
 .chart { flex: 1 1 300px; height: 260px; background: #fafafa; border-radius: 8px; min-width: 260px; }
+
+/* ---------- 国家 / 地区分布 ---------- */
+.country-stats { margin-bottom: 24px; }
+
+.country-summary {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+.country-summary b { color: #111827; font-weight: 600; }
+
+.country-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.country-card {
+  background: #fafbfd;
+  border: 1px solid #eef1f5;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+  cursor: default;
+}
+
+.country-card:hover {
+  transform: translateY(-2px);
+  border-color: #dbeafe;
+  background: #f8fbff;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, .1);
+}
+
+.country-flag {
+  font-size: 30px;
+  line-height: 1;
+  margin-bottom: 6px;
+  user-select: none;
+}
+
+.country-name {
+  font-size: 12px;
+  color: #374151;
+  font-weight: 500;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.country-count {
+  font-size: 11px;
+  color: #6b7280;
+}
+.country-count b {
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.country-empty {
+  font-size: 13px;
+  color: #9ca3af;
+  padding: 12px 0;
+}
 
 /* 拓扑图 */
 .topo { width: 100%; min-height: 200px; background: linear-gradient(180deg, #fafbfd 0%, #f5f7fa 100%); border: 1px solid #eef1f5; border-radius: 10px; box-sizing: border-box; padding: 4px; transition: height .25s ease; }
