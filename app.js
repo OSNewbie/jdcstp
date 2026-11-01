@@ -1,4 +1,4 @@
-// VERSION: 2024-QUALITY-PANEL
+// VERSION: 2024-AUTO-QUALITY-FIX
 const $ = id => document.getElementById(id);
 
 /* ========== 工具 ========== */
@@ -16,6 +16,12 @@ window.addEventListener('error', e => {
 window.addEventListener('unhandledrejection', e => {
   const el = $('status'); if (el) el.textContent = 'Promise 错误: ' + (e.reason?.message || e.reason);
 });
+
+// 安全绑定事件函数（元素不存在就跳过）
+function on(id, event, fn) {
+  const el = $(id);
+  if (el) el[event] = fn;
+}
 
 /* ========== 中文映射表 ========== */
 const ASN_MAP = {
@@ -181,62 +187,45 @@ async function resolveIP(host) {
   return '';
 }
 
-/* ========== 3. GeoIP (已修复未知问题，带超时控制) ========== */
-const GEO_APIS = [
-  { // 1. 首选：ipapi.is
-    url: ip => `https://api.ipapi.is/?q=${ip}`, 
-    parse: (d, ip) => ({
-      ip: d.ip || ip, 
-      asn: d.asn?.asn || '',
-      org: d.asn?.org || '',
-      country_code: d.location?.country_code || '', 
-      region: d.location?.state || '',
-      city: d.location?.city || '', 
-      lat: d.location?.latitude || 0, 
-      lon: d.location?.longitude || 0 
-    }) 
-  },
-  { // 2. 备选：ipwho.is
-    url: ip => `https://ipwho.is/${ip}`, 
-    parse: (d, ip) => ({
-      ip: d.ip || ip, 
-      asn: d.connection?.asn || '',
-      org: d.connection?.isp || d.connection?.org || '',
-      country_code: d.country_code || '', 
-      region: d.region || '',
-      city: d.city || '', 
-      lat: d.latitude || 0, 
-      lon: d.longitude || 0 
-    }) 
-  },
-  { // 3. 备选：ip.sb
-    url: ip => `https://api.ip.sb/geoip/${ip}`, 
-    parse: (d, ip) => ({
-      ip: d.ip || ip, 
-      asn: d.asn || '', 
-      org: d.isp || d.organization || '',
-      country_code: d.country_code || '', 
-      region: d.region || '',
-      city: d.city || '', 
-      lat: d.latitude || 0, 
-      lon: d.longitude || 0 
-    }) 
-  }
-];
+/* ========== 3. GeoIP ========== */
+async function fetchGeoIP(ip) {
+  try {
+    const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
+    if (res.ok) {
+      const d = await res.json();
+      if (d.location && d.location.country_code) {
+        return {
+          ip: d.ip || ip,
+          asn: d.asn?.asn || '',
+          org: d.asn?.org || d.company?.name || '',
+          country_code: d.location.country_code,
+          region: d.location.state || '',
+          city: d.location.city || '',
+          lat: d.location.latitude || 0,
+          lon: d.location.longitude || 0
+        };
+      }
+    }
+  } catch (e) { console.warn('ipapi.is 失败', e); }
 
-async function queryGeoIP(ip) {
-  for (const api of GEO_APIS) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const res = await fetch(api.url(ip), { signal: controller.signal });
-      clearTimeout(timeoutId);
-      if (!res.ok) continue;
-      const data = await res.json(); 
-      const parsed = api.parse(data, ip);
-      if (parsed.country_code) return parsed;
-    } catch {}
-  }
+  try {
+    const res = await fetch(`https://ipwho.is/${ip}`);
+    if (res.ok) {
+      const d = await res.json();
+      if (d.success !== false && d.country_code) {
+        return {
+          ip: d.ip || ip,
+          asn: d.connection?.asn || '',
+          org: d.connection?.isp || d.connection?.org || '',
+          country_code: d.country_code,
+          region: d.region || '',
+          city: d.city || '',
+          lat: d.latitude || 0,
+          lon: d.longitude || 0
+        };
+      }
+    }
+  } catch (e) { console.warn('ipwho.is 失败', e); }
   return null;
 }
 
@@ -273,7 +262,7 @@ function localizeCity(city, region) {
 }
 
 /* ========== 5. 节点分析 ========== */
-let currentNodesData = []; // 全局保存节点数据
+let currentNodesData = []; 
 async function analyzeNodes(nodes) {
   setStatus(`共 ${nodes.length} 个节点，正在解析 DNS...`);
   const ipMap = {};
@@ -283,24 +272,28 @@ async function analyzeNodes(nodes) {
     ipMap[host] = await resolveIP(host);
     setStatus(`DNS 解析 ${i + 1}/${uniqueServers.length}: ${host} → ${ipMap[host] || '失败'}`);
   }
+  
   const uniqueIPs = [...new Set(Object.values(ipMap).filter(Boolean))];
   const geoMap = {};
+  
   for (let i = 0; i < uniqueIPs.length; i++) {
     const ip = uniqueIPs[i];
-    setStatus(`GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip}`);
-    const geo = await queryGeoIP(ip);
+    setStatus(`GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip} (防止限流，请稍候...)`);
+    const geo = await fetchGeoIP(ip);
     if (geo) geoMap[ip] = geo;
+    await new Promise(r => setTimeout(r, 300));
   }
+
   return nodes.map((n, idx) => {
     const ip = ipMap[n.server] || '';
     const geo = geoMap[ip] || {};
-    const asn = geo.asn || '0';
+    const asnRaw = geo.asn || '0';
     return {
       id: idx + 1, name: n.name, server: n.server, port: n.port,
       protocol: String(n.type || 'unknown').toLowerCase(),
       ip: ip || '-', region: localizeRegion(geo.country_code),
-      country_code: geo.country_code || '', asn: 'AS' + asn,
-      org: localizeOrg(asn, geo.org), operator: geo.org || '',
+      country_code: geo.country_code || '', asn: 'AS' + asnRaw,
+      org: localizeOrg(asnRaw, geo.org), operator: geo.org || '',
       detail: localizeCity(geo.city, geo.region),
       stack: ip.includes(':') ? 6 : 4, lat: geo.lat || 0, lon: geo.lon || 0,
     };
@@ -376,7 +369,6 @@ function countryFlag(code) {
 function renderCountryStats(rows) {
   const el = $('countryStats');
   if (!el) return;
-
   const map = {};
   rows.forEach(r => {
     const code = (r.country_code || 'XX').toUpperCase();
@@ -384,14 +376,8 @@ function renderCountryStats(rows) {
     if (!map[code]) map[code] = { code, name, count: 0 };
     map[code].count++;
   });
-
   const entries = Object.values(map).sort((a, b) => b.count - a.count);
-
-  if (!entries.length) {
-    el.innerHTML = '<div class="country-empty">暂无数据</div>';
-    return;
-  }
-
+  if (!entries.length) { el.innerHTML = '<div class="country-empty">暂无数据</div>'; return; }
   const cards = entries.map(e => `
     <div class="country-card" title="${escapeHtml(e.name)}">
       <div class="country-flag">${countryFlag(e.code)}</div>
@@ -399,7 +385,6 @@ function renderCountryStats(rows) {
       <div class="country-count"><b>${e.count}</b> 个节点</div>
     </div>
   `).join('');
-
   el.innerHTML = `
     <div class="country-summary">
       共覆盖 <b>${entries.length}</b> 个国家 / 地区 · 节点总数 <b>${rows.length}</b>
@@ -427,7 +412,8 @@ function renderProfile(rows) {
     `组织数: ${Object.keys(orgCount).length}`,
     `主要组织: ${topOrg}`,
   ];
-  $('profileTags').innerHTML = tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+  const tagEl = $('profileTags');
+  if (tagEl) tagEl.innerHTML = tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
   renderPie('protocolChart', protocolCount, '协议分布');
   renderBar('regionChart', regionCount, '地区分布');
   renderBar('orgChart', orgCount, '组织分布');
@@ -633,7 +619,7 @@ async function fetchASForASN(asn) {
   return out;
 }
 
-/* ========== 13. IP 质量检测独立模块 ========== */
+/* ========== 13. IP 质量自动检测 ========== */
 async function fetchIPQuality(ip) {
   try {
     const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
@@ -655,16 +641,12 @@ async function fetchIPQuality(ip) {
   } catch { return null; }
 }
 
-$('checkQualityBtn').onclick = async () => {
-  if (!currentNodesData.length) {
-    $('qualityStatus').textContent = '请先解析订阅节点';
-    return;
-  }
+async function autoDetectQuality(rows) {
   const wrap = $('qualityTableWrap');
   const status = $('qualityStatus');
+  if (!wrap || !status) return;
   
-  // 过滤并去重 IP
-  const uniqueIps = [...new Set(currentNodesData.map(n => n.ip).filter(ip => ip && ip !== '-'))];
+  const uniqueIps = [...new Set(rows.map(n => n.ip).filter(ip => ip && ip !== '-'))];
   if (!uniqueIps.length) {
     status.textContent = '没有可检测的 IP';
     return;
@@ -679,7 +661,7 @@ $('checkQualityBtn').onclick = async () => {
       </thead>
       <tbody id="qTableBody">
         ${uniqueIps.map(ip => {
-          const node = currentNodesData.find(n => n.ip === ip);
+          const node = rows.find(n => n.ip === ip);
           return `<tr id="q-row-${ip.replace(/[.:]/g, '-')}">
             <td>${ip}</td>
             <td title="${escapeHtml(node.org)}">${escapeHtml(node.org)}</td>
@@ -692,7 +674,7 @@ $('checkQualityBtn').onclick = async () => {
   `;
   wrap.style.display = 'block';
   
-  status.textContent = `准备检测 ${uniqueIps.length} 个 IP...`;
+  status.textContent = `准备自动检测 ${uniqueIps.length} 个 IP...`;
   let completed = 0;
   
   for (const ip of uniqueIps) {
@@ -731,19 +713,19 @@ $('checkQualityBtn').onclick = async () => {
     }
     
     completed++;
-    status.textContent = `检测进度: ${completed}/${uniqueIps.length}`;
-    
-    // 防请求过快，间隔 200ms
-    await new Promise(r => setTimeout(r, 200));
+    status.textContent = `自动检测进度: ${completed}/${uniqueIps.length}`;
+    await new Promise(r => setTimeout(r, 250));
   }
   
-  status.textContent = `检测完成，共检测 ${uniqueIps.length} 个 IP`;
-};
+  status.textContent = `✅ 质量检测全部完成，共检测 ${uniqueIps.length} 个 IP`;
+}
 
 /* ========== 14. BGP 抽屉 ========== */
 let drawerOpen = false;
 function openBgpDrawer(node) {
   const drawer = $('bgpDrawer'), mask = $('drawerMask'), body = $('drawerBody');
+  if (!drawer || !mask || !body) return;
+  
   $('drawerIp').textContent = node.ip;
   $('drawerSub').textContent = `${node.org} · ${node.asn}`;
 
@@ -766,13 +748,13 @@ function openBgpDrawer(node) {
   drawerOpen = true;
 
   const ipTask = fetchBGPForIP(node.ip).then(d => renderBgpIpExt(d)).catch(e => {
-    $('bgpIpExt').innerHTML = `<div class="bgp-error">BGP 查询失败：${escapeHtml(e.message)}</div>`;
+    const el = $('bgpIpExt'); if (el) el.innerHTML = `<div class="bgp-error">BGP 查询失败：${escapeHtml(e.message)}</div>`;
   });
   const asnTask = node.asn && node.asn !== 'AS0'
     ? fetchASForASN(node.asn).then(d => renderBgpAsExt(d)).catch(e => {
-        $('bgpAsExt').innerHTML = `<div class="bgp-error">AS 查询失败：${escapeHtml(e.message)}</div>`;
+        const el = $('bgpAsExt'); if (el) el.innerHTML = `<div class="bgp-error">AS 查询失败：${escapeHtml(e.message)}</div>`;
       })
-    : Promise.resolve($('bgpAsExt').innerHTML = '<div class="bgp-empty">无 ASN 信息</div>');
+    : Promise.resolve($('bgpAsExt') ? $('bgpAsExt').innerHTML = '<div class="bgp-empty">无 ASN 信息</div>' : null);
   
   Promise.all([ipTask, asnTask]);
 }
@@ -813,16 +795,17 @@ function renderBgpAsExt(d) {
 }
 
 function closeBgpDrawer() {
-  $('bgpDrawer').classList.remove('show');
-  $('drawerMask').classList.remove('show');
+  const d = $('bgpDrawer'), m = $('drawerMask');
+  if (d) d.classList.remove('show');
+  if (m) m.classList.remove('show');
   drawerOpen = false;
 }
-$('drawerClose').onclick = closeBgpDrawer;
-$('drawerMask').onclick = closeBgpDrawer;
+on('drawerClose', 'onclick', closeBgpDrawer);
+on('drawerMask', 'onclick', closeBgpDrawer);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen) closeBgpDrawer(); });
 
 /* ========== 15. 独立 IP / ASN 查询 ========== */
-$('queryBtn').onclick = async () => {
+on('queryBtn', 'onclick', async () => {
   const q = $('queryInput').value.trim();
   if (!q) return;
   const el = $('queryResult');
@@ -838,7 +821,7 @@ $('queryBtn').onclick = async () => {
   } catch (e) {
     el.innerHTML = `<div class="bgp-error">查询失败：${escapeHtml(e.message)}</div>`;
   }
-};
+});
 
 function renderQueryIpHTML(ip, d) {
   const rows = [];
@@ -861,7 +844,7 @@ function renderQueryAsHTML(d) {
 }
 
 /* ========== 16. WebRTC 泄漏检测 ========== */
-$('diagWebrtc').onclick = async () => {
+on('diagWebrtc', 'onclick', async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在收集 ICE candidates…</div>';
   const ips = await detectWebRTC();
@@ -880,7 +863,7 @@ $('diagWebrtc').onclick = async () => {
       ? `<div class="diag-note warn">⚠ 检测到 ${publicLeak.length} 个公网 IP 暴露。若使用代理，说明存在 WebRTC 泄漏风险。</div>`
       : `<div class="diag-note ok">仅收集到内网 / 本地地址，未泄漏公网 IP。</div>`}
   </div>`;
-};
+});
 
 function detectWebRTC() {
   return new Promise(resolve => {
@@ -907,7 +890,7 @@ function isPrivate(ip) {
 }
 
 /* ========== 17. 出口 IP 一致性 ========== */
-$('diagEgress').onclick = async () => {
+on('diagEgress', 'onclick', async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在通过多个来源测试出口 IP…</div>';
   const apis = [
@@ -936,10 +919,10 @@ $('diagEgress').onclick = async () => {
         : `⚠ 检测到 ${unique.length} 个不同的出口 IP：${unique.map(i => escapeHtml(i)).join(' / ')}`}
     </div>
   </div>`;
-};
+});
 
 /* ========== 18. DNS 检查 ========== */
-$('diagDns').onclick = async () => {
+on('diagDns', 'onclick', async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在通过 DoH 测试解析…</div>';
   const testDomains = ['google.com', 'cloudflare.com', 'github.com'];
@@ -966,13 +949,16 @@ $('diagDns').onclick = async () => {
       如需检测 DNS 泄漏，请访问 <a href="https://browserleaks.com/dns" target="_blank" rel="noopener">browserleaks.com/dns</a>。
     </div>
   </div>`;
-};
+});
 
 /* ========== 19. 主流程 ========== */
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
-function setStatus(msg) { $('status').textContent = msg; }
+function setStatus(msg) {
+  const el = $('status');
+  if (el) el.textContent = msg;
+}
 
 async function runWithNodes(nodes) {
   if (!nodes.length) { setStatus('没有解析到任何节点'); return; }
@@ -980,50 +966,62 @@ async function runWithNodes(nodes) {
     const results = await analyzeNodes(nodes);
     currentNodesData = results;
     
-    // 清空旧的检测结果
-    $('qualityTableWrap').innerHTML = '';
-    $('qualityTableWrap').style.display = 'none';
-    $('qualityStatus').textContent = '';
+    const qWrap = $('qualityTableWrap');
+    if (qWrap) { qWrap.innerHTML = ''; qWrap.style.display = 'none'; }
+    const qStatus = $('qualityStatus');
+    if (qStatus) qStatus.textContent = '';
 
     renderTable(results);
     renderTopo(results);
     renderProfile(results);
     renderCountryStats(results);
-    setStatus(`检测完成，共 ${results.length} 个节点`);
+    
+    setStatus(`节点解析完成，准备进行质量检测...`);
+    await autoDetectQuality(results);
+    
+    setStatus(`全部检测完成，共 ${results.length} 个节点`);
+
   } catch (e) { setStatus('检测失败: ' + e.message); }
 }
 
-$('loadUrl').onclick = async () => {
+on('loadUrl', 'onclick', async () => {
   const url = $('subUrl').value.trim();
   if (!url) return setStatus('请输入订阅 URL');
   setStatus('拉取订阅中...');
   try {
-    const res = await fetch(url);
-    const text = await res.text();
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    let text = await res.text();
+    text = text.replace(/^\uFEFF/, '').trim();
+    if (!text) throw new Error('订阅内容为空');
     const nodes = parseSubscription(text);
     await runWithNodes(nodes);
-  } catch (e) { setStatus('拉取失败（可能是 CORS）: ' + e.message); }
-};
+  } catch (e) {
+    setStatus('拉取失败: ' + e.message + '（请确认是否 CORS 受限，或换用粘贴解析）');
+  }
+});
 
-$('loadText').onclick = async () => {
+on('loadText', 'onclick', async () => {
   const text = $('subText').value.trim();
   if (!text) return setStatus('请粘贴订阅内容');
   setStatus('解析中...');
   const nodes = parseSubscription(text);
   await runWithNodes(nodes);
-};
+});
 
-$('clearBtn').onclick = () => {
+on('clearBtn', 'onclick', () => {
   $('subText').value = ''; $('subUrl').value = '';
-  document.querySelector('#resultTable tbody').innerHTML = '';
-  $('profileTags').innerHTML = '';
-  $('countryStats').innerHTML = '';
-  $('diagResult').innerHTML = ''; $('queryResult').innerHTML = '';
-  $('qualityTableWrap').innerHTML = ''; $('qualityTableWrap').style.display = 'none';
-  $('qualityStatus').textContent = '';
+  const tb = document.querySelector('#resultTable tbody'); if (tb) tb.innerHTML = '';
+  const pt = $('profileTags'); if (pt) pt.innerHTML = '';
+  const cs = $('countryStats'); if (cs) cs.innerHTML = '';
+  const dr = $('diagResult'); if (dr) dr.innerHTML = '';
+  const qr = $('queryResult'); if (qr) qr.innerHTML = '';
+  const qtw = $('qualityTableWrap'); if (qtw) { qtw.innerHTML = ''; qtw.style.display = 'none'; }
+  const qs = $('qualityStatus'); if (qs) qs.textContent = '';
+  
   ['protocolChart','regionChart','orgChart','topoChart'].forEach(id => {
     const el = $(id); if (el) { const c = echarts.getInstanceByDom(el); if (c) c.clear(); }
   });
   currentTopoRows = null; currentNodesData = []; closeBgpDrawer(); hideIpPopover();
   setStatus('等待输入...');
-};
+});
