@@ -1,4 +1,4 @@
-// VERSION: 2024-COUNTRY
+// VERSION: 2024-IPQUALITY
 const $ = id => document.getElementById(id);
 
 /* ========== 工具 ========== */
@@ -181,7 +181,7 @@ async function resolveIP(host) {
   return '';
 }
 
-/* ========== 3. GeoIP ========== */
+/* ========== 3. GeoIP (基础地理) ========== */
 const GEO_APIS = [
   { url: ip => `https://ipwho.is/${ip}`, parse: (d, ip) => ({
       ip: d.ip || ip, asn: d.connection?.asn || '',
@@ -537,7 +537,7 @@ function renderTopo(rows) {
             <span style="color:#6b7280">ASN</span> ${r.asn}<br/>
             <span style="color:#6b7280">地区</span> ${r.region} · ${r.detail}<br/>
             <span style="color:#6b7280">栈</span> IPv${r.stack}<br/>
-            <span style="color:#3b82f6;font-size:11px">👉 点击查看 BGP 路由详情</span>`;
+            <span style="color:#3b82f6;font-size:11px">👉 点击查看 BGP 与 IP 质量详情</span>`;
         }
         return p.name;
       },
@@ -600,7 +600,33 @@ async function fetchASForASN(asn) {
   return out;
 }
 
-/* ========== 13. BGP 抽屉 ========== */
+/* ========== 13. IP 质量检测 ========== */
+// 使用 ipapi.is API 检测 IP 质量 (免费，支持 HTTPS / CORS)
+async function fetchIPQuality(ip) {
+  try {
+    const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    // 解析原生IP逻辑：比较 ASN 归属国和 IP 所在国
+    const isNative = data.asn?.country === data.location?.country_code;
+    return {
+      is_datacenter: data.is_datacenter,
+      is_vpn: data.is_vpn,
+      is_proxy: data.is_proxy,
+      is_tor: data.is_tor,
+      is_abuser: data.is_abuser,
+      is_crawler: data.is_crawler,
+      is_mobile: data.is_mobile,
+      company: data.company?.name || '',
+      abuser_score: data.company?.abuser_score || '0',
+      isNative: isNative,
+      asnCountry: data.asn?.country || '',
+      ipCountry: data.location?.country_code || ''
+    };
+  } catch { return null; }
+}
+
+/* ========== 14. BGP & 质量抽屉 ========== */
 let drawerOpen = false;
 function openBgpDrawer(node) {
   const drawer = $('bgpDrawer'), mask = $('drawerMask'), body = $('drawerBody');
@@ -616,13 +642,22 @@ function openBgpDrawer(node) {
       <div class="bgp-row"><span>协议</span><b>${escapeHtml(node.protocol)}</b></div>
       <div class="bgp-row"><span>栈</span><b>IPv${node.stack}</b></div>
     </div>
+    
+    <div class="bgp-section" id="ipQualityExt"><div class="bgp-loading">正在检测 IP 质量...</div></div>
+    
     <div class="bgp-section" id="bgpIpExt"><div class="bgp-loading">正在查询 BGP 路由信息…</div></div>
+    
     <div class="bgp-section" id="bgpAsExt"><div class="bgp-loading">正在查询 AS 信息…</div></div>
-    <div class="bgp-foot">数据来源：RIPEstat (RIPE NCC)</div>`;
+    
+    <div class="bgp-foot">数据来源：RIPEstat · ipapi.is</div>`;
 
   drawer.classList.add('show'); mask.classList.add('show');
   drawerOpen = true;
 
+  // 并发查询所有数据
+  const qTask = fetchIPQuality(node.ip).then(d => renderIPQuality(d)).catch(e => {
+    $('ipQualityExt').innerHTML = `<div class="bgp-error">质量检测失败：${escapeHtml(e.message)}</div>`;
+  });
   const ipTask = fetchBGPForIP(node.ip).then(d => renderBgpIpExt(d)).catch(e => {
     $('bgpIpExt').innerHTML = `<div class="bgp-error">BGP 查询失败：${escapeHtml(e.message)}</div>`;
   });
@@ -631,7 +666,54 @@ function openBgpDrawer(node) {
         $('bgpAsExt').innerHTML = `<div class="bgp-error">AS 查询失败：${escapeHtml(e.message)}</div>`;
       })
     : Promise.resolve($('bgpAsExt').innerHTML = '<div class="bgp-empty">无 ASN 信息</div>');
-  Promise.all([ipTask, asnTask]);
+  
+  Promise.all([qTask, ipTask, asnTask]);
+}
+
+function renderIPQuality(q) {
+  const el = $('ipQualityExt'); if (!el) return;
+  if (!q) {
+    el.innerHTML = `<div class="bgp-empty">无法获取质量数据（接口超时或被拦截）</div>`;
+    return;
+  }
+  
+  const rows = [];
+  // 原生/广播
+  const nativeStr = q.isNative 
+    ? '<span class="ok">原生 IP</span> <span style="font-size:11px;color:#6b7280">(ASN 与 IP 属地一致)</span>'
+    : '<span class="warn">广播 IP</span> <span style="font-size:11px;color:#6b7280">(ASN 与 IP 属地不一致)</span>';
+  rows.push(`<div class="bgp-row"><span>IP 属性</span><b>${nativeStr}</b></div>`);
+
+  // IP 类型
+  let typeLabel = '住宅 IP';
+  let typeClass = 'ok';
+  if (q.is_datacenter) { typeLabel = '数据中心 / 机房'; typeClass = 'warn'; }
+  else if (q.is_mobile) { typeLabel = '移动网络'; typeClass = 'warn'; }
+  rows.push(`<div class="bgp-row"><span>IP 类型</span><b><span class="${typeClass}">${typeLabel}</span></b></div>`);
+
+  // 风险标签
+  const risks = [];
+  if (q.is_vpn) risks.push('<span class="badge risk">VPN</span>');
+  if (q.is_proxy) risks.push('<span class="badge risk">代理</span>');
+  if (q.is_tor) risks.push('<span class="badge risk">Tor</span>');
+  if (q.is_abuser) risks.push('<span class="badge risk">滥用者</span>');
+  if (q.is_crawler) risks.push('<span class="badge risk">爬虫</span>');
+  
+  if (risks.length) {
+    rows.push(`<div class="bgp-row"><span>风险标签</span><b style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${risks.join('')}</b></div>`);
+  } else {
+    rows.push(`<div class="bgp-row"><span>风险标签</span><b><span class="ok">未发现明显风险</span></b></div>`);
+  }
+
+  // 公司 & 评分
+  if (q.company) {
+    rows.push(`<div class="bgp-row"><span>公司</span><b>${escapeHtml(q.company)}</b></div>`);
+  }
+  if (q.abuser_score && q.abuser_score !== '0') {
+    rows.push(`<div class="bgp-row"><span>滥用评分</span><b>${escapeHtml(q.abuser_score)}</b></div>`);
+  }
+
+  el.innerHTML = `<div class="bgp-title">IP 质量</div>${rows.join('')}`;
 }
 
 function renderBgpIpExt(d) {
@@ -642,18 +724,10 @@ function renderBgpIpExt(d) {
     const announced = d.prefix.announced ? '<span class="ok">已宣告</span>' : '<span class="no">未宣告</span>';
     rows.push(`<div class="bgp-row"><span>前缀</span><b>${escapeHtml(prefix)}</b></div>`);
     rows.push(`<div class="bgp-row"><span>宣告状态</span><b>${announced}</b></div>`);
-    if (d.prefix.asns && d.prefix.asns.length) {
-      const asns = d.prefix.asns.slice(0, 5).map(a => `${a.asn} ${escapeHtml(a.holder || '')}`).join('<br>');
-      rows.push(`<div class="bgp-row"><span>归属 AS</span><b style="text-align:right;font-weight:500;font-size:12px">${asns}</b></div>`);
-    }
   }
   if (d.routing) {
     rows.push(`<div class="bgp-row"><span>首次可见</span><b style="font-weight:500;font-size:12px">${escapeHtml(d.routing.first_seen?.time || '—')}</b></div>`);
     rows.push(`<div class="bgp-row"><span>最后可见</span><b style="font-weight:500;font-size:12px">${escapeHtml(d.routing.last_seen?.time || '—')}</b></div>`);
-  }
-  if (d.reverse?.result?.length) {
-    const r = d.reverse.result[0];
-    if (r.reverse_dns) rows.push(`<div class="bgp-row"><span>反向 DNS</span><b>${escapeHtml(r.reverse_dns)}</b></div>`);
   }
   el.innerHTML = rows.length
     ? `<div class="bgp-title">路由信息</div>${rows.join('')}`
@@ -665,7 +739,6 @@ function renderBgpAsExt(d) {
   const rows = [];
   if (d.overview) {
     rows.push(`<div class="bgp-row"><span>AS 名称</span><b>${escapeHtml(d.overview.holder || '—')}</b></div>`);
-    rows.push(`<div class="bgp-row"><span>宣告状态</span><b>${d.overview.announced ? '<span class="ok">已宣告</span>' : '<span class="no">未宣告</span>'}</b></div>`);
   }
   if (d.neighbours?.neighbours) {
     const left = d.neighbours.neighbours.filter(n => n.type === 'left').slice(0, 8);
@@ -687,7 +760,7 @@ $('drawerClose').onclick = closeBgpDrawer;
 $('drawerMask').onclick = closeBgpDrawer;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen) closeBgpDrawer(); });
 
-/* ========== 14. IP / ASN 查询 ========== */
+/* ========== 15. IP / ASN 查询 ========== */
 $('queryBtn').onclick = async () => {
   const q = $('queryInput').value.trim();
   if (!q) return;
@@ -699,12 +772,29 @@ $('queryBtn').onclick = async () => {
       el.innerHTML = `<div class="query-card"><div class="bgp-title">AS 信息</div>${renderQueryAsHTML(d)}</div>`;
     } else {
       const d = await fetchBGPForIP(q);
-      el.innerHTML = `<div class="query-card"><div class="bgp-title">BGP 路由</div>${renderQueryIpHTML(q, d)}</div>`;
+      const quality = await fetchIPQuality(q);
+      el.innerHTML = `<div class="query-card">
+        <div class="bgp-title">IP 质量</div>${renderQueryQualityHTML(quality)}
+        <div class="bgp-title" style="margin-top:16px">BGP 路由</div>${renderQueryIpHTML(q, d)}
+      </div>`;
     }
   } catch (e) {
     el.innerHTML = `<div class="bgp-error">查询失败：${escapeHtml(e.message)}</div>`;
   }
 };
+
+function renderQueryQualityHTML(q) {
+  if (!q) return '<div class="bgp-empty">无数据</div>';
+  let html = '';
+  html += `<div class="bgp-row"><span>IP 属性</span><b>${q.isNative ? '<span class="ok">原生 IP</span>' : '<span class="warn">广播 IP</span>'}</b></div>`;
+  let type = q.is_datacenter ? '机房' : q.is_mobile ? '移动网络' : '住宅';
+  html += `<div class="bgp-row"><span>IP 类型</span><b>${type}</b></div>`;
+  const r = [];
+  if (q.is_vpn) r.push('VPN'); if (q.is_proxy) r.push('代理'); if (q.is_tor) r.push('Tor');
+  if (q.is_abuser) r.push('滥用'); if (q.is_crawler) r.push('爬虫');
+  html += `<div class="bgp-row"><span>风险标签</span><b>${r.length ? r.map(x => `<span class="badge risk">${x}</span>`).join('') : '<span class="ok">无</span>'}</b></div>`;
+  return html;
+}
 
 function renderQueryIpHTML(ip, d) {
   const rows = [];
@@ -714,10 +804,6 @@ function renderQueryIpHTML(ip, d) {
   }
   if (d.routing) {
     rows.push(`<div class="bgp-row"><span>首次可见</span><b style="font-weight:500;font-size:12px">${escapeHtml(d.routing.first_seen?.time || '—')}</b></div>`);
-    rows.push(`<div class="bgp-row"><span>最后可见</span><b style="font-weight:500;font-size:12px">${escapeHtml(d.routing.last_seen?.time || '—')}</b></div>`);
-  }
-  if (d.reverse?.result?.[0]?.reverse_dns) {
-    rows.push(`<div class="bgp-row"><span>反向 DNS</span><b>${escapeHtml(d.reverse.result[0].reverse_dns)}</b></div>`);
   }
   return rows.join('');
 }
@@ -727,16 +813,10 @@ function renderQueryAsHTML(d) {
   if (d.overview) {
     rows.push(`<div class="bgp-row"><span>AS 名称</span><b>${escapeHtml(d.overview.holder || '—')}</b></div>`);
   }
-  if (d.neighbours?.neighbours) {
-    const left = d.neighbours.neighbours.filter(n => n.type === 'left').slice(0, 10);
-    const right = d.neighbours.neighbours.filter(n => n.type === 'right').slice(0, 10);
-    if (left.length) rows.push(`<div class="bgp-row"><span>上游</span><b class="chips">${left.map(n => `<span class="chip">AS${n.asn}</span>`).join('')}</b></div>`);
-    if (right.length) rows.push(`<div class="bgp-row"><span>下游</span><b class="chips">${right.map(n => `<span class="chip">AS${n.asn}</span>`).join('')}</b></div>`);
-  }
   return rows.join('');
 }
 
-/* ========== 15. WebRTC 泄漏检测 ========== */
+/* ========== 16. WebRTC 泄漏检测 ========== */
 $('diagWebrtc').onclick = async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在收集 ICE candidates…</div>';
@@ -782,7 +862,7 @@ function isPrivate(ip) {
          /^(fe80|fc|fd)/i.test(ip);
 }
 
-/* ========== 16. 出口 IP 一致性 ========== */
+/* ========== 17. 出口 IP 一致性 ========== */
 $('diagEgress').onclick = async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在通过多个来源测试出口 IP…</div>';
@@ -814,7 +894,7 @@ $('diagEgress').onclick = async () => {
   </div>`;
 };
 
-/* ========== 17. DNS 检查 ========== */
+/* ========== 18. DNS 检查 ========== */
 $('diagDns').onclick = async () => {
   const el = $('diagResult');
   el.innerHTML = '<div class="bgp-loading">正在通过 DoH 测试解析…</div>';
@@ -844,7 +924,7 @@ $('diagDns').onclick = async () => {
   </div>`;
 };
 
-/* ========== 18. 主流程 ========== */
+/* ========== 19. 主流程 ========== */
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
@@ -858,7 +938,7 @@ async function runWithNodes(nodes) {
     renderTopo(results);
     renderProfile(results);
     renderCountryStats(results);
-    setStatus(`检测完成，共 ${results.length} 个节点（点击拓扑图 IP 卡片可查看 BGP）`);
+    setStatus(`检测完成，共 ${results.length} 个节点（点击拓扑图 IP 卡片可查看 BGP 与 IP 质量）`);
   } catch (e) { setStatus('检测失败: ' + e.message); }
 }
 
