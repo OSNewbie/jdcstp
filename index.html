@@ -3,34 +3,78 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>极简论坛测试版</title>
+  <title>极简论坛 - 用户与徽章</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 顶部导航 -->
   <header>
-    <div class="container">
-      <h1>极简论坛</h1>
-      <span class="badge">测试版</span>
+    <div class="container nav-bar">
+      <div class="logo">
+        <h1>极简论坛</h1>
+      </div>
+      <div id="nav-actions" class="nav-actions">
+        <!-- 由 JS 动态渲染登录状态 -->
+      </div>
     </div>
   </header>
   
   <main class="container">
-    <!-- 发帖区域 -->
-    <div class="card create-post">
+    <!-- 发帖区域 (需登录) -->
+    <div class="card create-post" id="create-post-area" style="display: none;">
       <h2>发布新帖</h2>
       <input type="text" id="post-title" placeholder="输入帖子标题...">
       <textarea id="post-content" placeholder="分享你的想法..."></textarea>
       <div class="bottom-row">
-        <input type="text" id="post-author" placeholder="你的昵称 (默认匿名)">
+        <span class="posting-as">当前身份: <b id="current-user-name"></b></span>
         <button id="submit-btn">发布帖子</button>
       </div>
     </div>
 
+    <!-- 未登录提示 -->
+    <div class="card" id="login-prompt" style="text-align:center; padding: 40px; color: #6b7280;">
+      请先登录后参与讨论
+    </div>
+
     <!-- 帖子列表 -->
     <div id="post-list" class="post-list">
-      <!-- 列表会由 JS 渲染在这里 -->
+      <!-- 列表由 JS 渲染 -->
     </div>
   </main>
+
+  <!-- 登录/注册弹窗 -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-content">
+      <span class="close-btn" id="close-auth">&times;</span>
+      <h2 id="auth-title">登录</h2>
+      <input type="text" id="auth-username" placeholder="用户名">
+      <input type="password" id="auth-password" placeholder="密码">
+      <button id="auth-submit-btn" class="btn-full">登录</button>
+      <p class="toggle-auth">
+        <span id="toggle-text">没有账号？去注册</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 管理后台弹窗 -->
+  <div class="modal-overlay" id="admin-modal">
+    <div class="modal-content" style="width: 600px; max-width: 90%;">
+      <span class="close-btn" id="close-admin">&times;</span>
+      <h2>🛡️ 管理后台</h2>
+      <div class="admin-tabs">
+        <button class="tab-btn active" data-tab="users">用户管理 (发徽章)</button>
+        <button class="tab-btn" data-tab="posts">帖子管理 (删除)</button>
+      </div>
+      
+      <div id="admin-content-users" class="admin-panel">
+        <!-- 用户列表 -->
+      </div>
+      
+      <div id="admin-content-posts" class="admin-panel" style="display: none;">
+        <!-- 帖子列表 -->
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
