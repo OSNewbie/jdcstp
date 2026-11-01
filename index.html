@@ -1,91 +1,37 @@
 <!DOCTYPE html>
-<!-- VERSION: 2024-FINAL -->
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>节点拓扑分析</title>
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>极简论坛测试版</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
-  <h1>节点拓扑分析</h1>
-
-  <div class="input-row">
-    <input id="subUrl" placeholder="订阅链接（需支持 CORS）">
-    <button id="loadUrl">拉取订阅</button>
-  </div>
-  <div class="input-row">
-    <textarea id="subText" placeholder="或粘贴 Base64 订阅内容 / Clash YAML / 纯链接列表"></textarea>
-  </div>
-  <div class="input-row">
-    <button id="loadText">解析粘贴内容</button>
-    <button id="clearBtn" class="secondary">清空</button>
-  </div>
-  <div id="status">等待输入...</div>
-
-  <table id="resultTable">
-    <colgroup>
-      <col style="width:56px"><col><col style="width:96px"><col style="width:80px">
-      <col style="width:96px"><col><col style="width:72px"><col style="width:130px"><col>
-    </colgroup>
-    <thead>
-      <tr>
-        <th>序号</th><th>节点名</th><th>协议</th><th>地区</th><th>AS编号</th>
-        <th>组织</th><th>栈</th><th>入口IP</th><th>详细地区</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h2>个人画像</h2>
-  <div id="profileTags" class="tags"></div>
-
-  <h2>国家 / 地区分布</h2>
-  <div id="countryStats" class="country-stats"></div>
-
-  <div class="charts-row">
-    <div id="protocolChart" class="chart"></div>
-    <div id="regionChart" class="chart"></div>
-    <div id="orgChart" class="chart"></div>
-  </div>
-
-  <h2>拓扑图 <span class="hint">（点击 IP 卡片查看 BGP 路由）</span></h2>
-  <div id="topoChart" class="topo"></div>
-
-  <h2>节点质量自动检测 <span class="hint">（解析后自动执行，按顺序检测）</span></h2>
-  <div id="qualityStatus" class="quality-status" style="margin-bottom:12px; font-weight:600; color:#3b82f6;"></div>
-  <div id="qualityTableWrap" class="quality-table-wrap"></div>
-
-  <h2>IP / ASN 查询</h2>
-  <div class="input-row">
-    <input id="queryInput" placeholder="输入 IP 或 ASN（如 8.8.8.8 或 AS15169）">
-    <button id="queryBtn">查询</button>
-  </div>
-  <div id="queryResult" class="query-result"></div>
-
-  <h2>本机网络诊断</h2>
-  <div class="diag-row">
-    <button id="diagWebrtc">WebRTC 泄漏检测</button>
-    <button id="diagEgress" class="secondary">出口 IP 一致性</button>
-    <button id="diagDns" class="secondary">DNS 解析器检查</button>
-  </div>
-  <div id="diagResult" class="diag-result"></div>
-</div>
-
-<div class="drawer-mask" id="drawerMask"></div>
-<aside class="drawer" id="bgpDrawer">
-  <header class="drawer-head">
-    <div>
-      <div class="drawer-title" id="drawerIp">—</div>
-      <div class="drawer-sub" id="drawerSub">—</div>
+  <header>
+    <div class="container">
+      <h1>极简论坛</h1>
+      <span class="badge">测试版</span>
     </div>
-    <button class="drawer-close" id="drawerClose">✕</button>
   </header>
-  <div class="drawer-body" id="drawerBody"></div>
-</aside>
+  
+  <main class="container">
+    <!-- 发帖区域 -->
+    <div class="card create-post">
+      <h2>发布新帖</h2>
+      <input type="text" id="post-title" placeholder="输入帖子标题...">
+      <textarea id="post-content" placeholder="分享你的想法..."></textarea>
+      <div class="bottom-row">
+        <input type="text" id="post-author" placeholder="你的昵称 (默认匿名)">
+        <button id="submit-btn">发布帖子</button>
+      </div>
+    </div>
 
-<script src="app.js"></script>
+    <!-- 帖子列表 -->
+    <div id="post-list" class="post-list">
+      <!-- 列表会由 JS 渲染在这里 -->
+    </div>
+  </main>
+
+  <script src="app.js"></script>
 </body>
 </html>
