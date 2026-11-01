@@ -1,4 +1,4 @@
-// VERSION: 2024-IPQUALITY
+// VERSION: 2024-QUALITY-PANEL
 const $ = id => document.getElementById(id);
 
 /* ========== 工具 ========== */
@@ -181,27 +181,59 @@ async function resolveIP(host) {
   return '';
 }
 
-/* ========== 3. GeoIP (基础地理) ========== */
+/* ========== 3. GeoIP (已修复未知问题，带超时控制) ========== */
 const GEO_APIS = [
-  { url: ip => `https://ipwho.is/${ip}`, parse: (d, ip) => ({
-      ip: d.ip || ip, asn: d.connection?.asn || '',
+  { // 1. 首选：ipapi.is
+    url: ip => `https://api.ipapi.is/?q=${ip}`, 
+    parse: (d, ip) => ({
+      ip: d.ip || ip, 
+      asn: d.asn?.asn || '',
+      org: d.asn?.org || '',
+      country_code: d.location?.country_code || '', 
+      region: d.location?.state || '',
+      city: d.location?.city || '', 
+      lat: d.location?.latitude || 0, 
+      lon: d.location?.longitude || 0 
+    }) 
+  },
+  { // 2. 备选：ipwho.is
+    url: ip => `https://ipwho.is/${ip}`, 
+    parse: (d, ip) => ({
+      ip: d.ip || ip, 
+      asn: d.connection?.asn || '',
       org: d.connection?.isp || d.connection?.org || '',
-      country_code: d.country_code || '', region: d.region || '',
-      city: d.city || '', lat: d.latitude || 0, lon: d.longitude || 0 }) },
-  { url: ip => `https://ipapi.co/${ip}/json/`, parse: (d, ip) => ({
-      ip: d.ip || ip, asn: String(d.asn || '').replace('AS', ''), org: d.org || '',
-      country_code: d.country_code || '', region: d.region || '',
-      city: d.city || '', lat: d.latitude || 0, lon: d.longitude || 0 }) },
-  { url: ip => `https://api.ip.sb/geoip/${ip}`, parse: (d, ip) => ({
-      ip: d.ip || ip, asn: d.asn || '', org: d.isp || d.organization || '',
-      country_code: d.country_code || '', region: d.region || '',
-      city: d.city || '', lat: d.latitude || 0, lon: d.longitude || 0 }) },
+      country_code: d.country_code || '', 
+      region: d.region || '',
+      city: d.city || '', 
+      lat: d.latitude || 0, 
+      lon: d.longitude || 0 
+    }) 
+  },
+  { // 3. 备选：ip.sb
+    url: ip => `https://api.ip.sb/geoip/${ip}`, 
+    parse: (d, ip) => ({
+      ip: d.ip || ip, 
+      asn: d.asn || '', 
+      org: d.isp || d.organization || '',
+      country_code: d.country_code || '', 
+      region: d.region || '',
+      city: d.city || '', 
+      lat: d.latitude || 0, 
+      lon: d.longitude || 0 
+    }) 
+  }
 ];
+
 async function queryGeoIP(ip) {
   for (const api of GEO_APIS) {
     try {
-      const res = await fetch(api.url(ip)); if (!res.ok) continue;
-      const data = await res.json(); const parsed = api.parse(data, ip);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(api.url(ip), { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!res.ok) continue;
+      const data = await res.json(); 
+      const parsed = api.parse(data, ip);
       if (parsed.country_code) return parsed;
     } catch {}
   }
@@ -241,6 +273,7 @@ function localizeCity(city, region) {
 }
 
 /* ========== 5. 节点分析 ========== */
+let currentNodesData = []; // 全局保存节点数据
 async function analyzeNodes(nodes) {
   setStatus(`共 ${nodes.length} 个节点，正在解析 DNS...`);
   const ipMap = {};
@@ -537,7 +570,7 @@ function renderTopo(rows) {
             <span style="color:#6b7280">ASN</span> ${r.asn}<br/>
             <span style="color:#6b7280">地区</span> ${r.region} · ${r.detail}<br/>
             <span style="color:#6b7280">栈</span> IPv${r.stack}<br/>
-            <span style="color:#3b82f6;font-size:11px">👉 点击查看 BGP 与 IP 质量详情</span>`;
+            <span style="color:#3b82f6;font-size:11px">👉 点击查看 BGP 路由详情</span>`;
         }
         return p.name;
       },
@@ -600,14 +633,12 @@ async function fetchASForASN(asn) {
   return out;
 }
 
-/* ========== 13. IP 质量检测 ========== */
-// 使用 ipapi.is API 检测 IP 质量 (免费，支持 HTTPS / CORS)
+/* ========== 13. IP 质量检测独立模块 ========== */
 async function fetchIPQuality(ip) {
   try {
     const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
     if (!res.ok) return null;
     const data = await res.json();
-    // 解析原生IP逻辑：比较 ASN 归属国和 IP 所在国
     const isNative = data.asn?.country === data.location?.country_code;
     return {
       is_datacenter: data.is_datacenter,
@@ -619,14 +650,97 @@ async function fetchIPQuality(ip) {
       is_mobile: data.is_mobile,
       company: data.company?.name || '',
       abuser_score: data.company?.abuser_score || '0',
-      isNative: isNative,
-      asnCountry: data.asn?.country || '',
-      ipCountry: data.location?.country_code || ''
+      isNative: isNative
     };
   } catch { return null; }
 }
 
-/* ========== 14. BGP & 质量抽屉 ========== */
+$('checkQualityBtn').onclick = async () => {
+  if (!currentNodesData.length) {
+    $('qualityStatus').textContent = '请先解析订阅节点';
+    return;
+  }
+  const wrap = $('qualityTableWrap');
+  const status = $('qualityStatus');
+  
+  // 过滤并去重 IP
+  const uniqueIps = [...new Set(currentNodesData.map(n => n.ip).filter(ip => ip && ip !== '-'))];
+  if (!uniqueIps.length) {
+    status.textContent = '没有可检测的 IP';
+    return;
+  }
+  
+  wrap.innerHTML = `
+    <table class="q-table">
+      <thead>
+        <tr>
+          <th>IP 地址</th><th>归属组织</th><th>地区</th><th>IP 属性</th><th>IP 类型</th><th>风险标签</th><th>公司</th><th>滥用评分</th>
+        </tr>
+      </thead>
+      <tbody id="qTableBody">
+        ${uniqueIps.map(ip => {
+          const node = currentNodesData.find(n => n.ip === ip);
+          return `<tr id="q-row-${ip.replace(/[.:]/g, '-')}">
+            <td>${ip}</td>
+            <td title="${escapeHtml(node.org)}">${escapeHtml(node.org)}</td>
+            <td>${countryFlag(node.country_code)} ${escapeHtml(node.region)}</td>
+            <td colspan="5" class="q-wait">等待检测...</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  wrap.style.display = 'block';
+  
+  status.textContent = `准备检测 ${uniqueIps.length} 个 IP...`;
+  let completed = 0;
+  
+  for (const ip of uniqueIps) {
+    const trId = `q-row-${ip.replace(/[.:]/g, '-')}`;
+    const tr = document.getElementById(trId);
+    if (tr) tr.cells[3].innerHTML = '<span style="color:#3b82f6">检测中...</span>';
+    
+    const q = await fetchIPQuality(ip);
+    
+    if (tr) {
+      if (!q) {
+        tr.cells[3].innerHTML = '<span class="no">获取失败</span>';
+        tr.cells[4].innerHTML = '-';
+        tr.cells[5].innerHTML = '-';
+        tr.cells[6].innerHTML = '-';
+        tr.cells[7].innerHTML = '-';
+      } else {
+        tr.cells[3].innerHTML = q.isNative ? '<span class="ok">原生</span>' : '<span class="warn">广播</span>';
+        
+        let typeLabel = '住宅';
+        if (q.is_datacenter) typeLabel = '机房';
+        else if (q.is_mobile) typeLabel = '移动';
+        tr.cells[4].innerHTML = typeLabel;
+        
+        const risks = [];
+        if (q.is_vpn) risks.push('<span class="badge risk">VPN</span>');
+        if (q.is_proxy) risks.push('<span class="badge risk">代理</span>');
+        if (q.is_tor) risks.push('<span class="badge risk">Tor</span>');
+        if (q.is_abuser) risks.push('<span class="badge risk">滥用</span>');
+        if (q.is_crawler) risks.push('<span class="badge risk">爬虫</span>');
+        tr.cells[5].innerHTML = risks.length ? risks.join(' ') : '<span class="ok">无</span>';
+        
+        tr.cells[6].innerHTML = escapeHtml(q.company || '-');
+        tr.cells[7].innerHTML = q.abuser_score || '0';
+      }
+    }
+    
+    completed++;
+    status.textContent = `检测进度: ${completed}/${uniqueIps.length}`;
+    
+    // 防请求过快，间隔 200ms
+    await new Promise(r => setTimeout(r, 200));
+  }
+  
+  status.textContent = `检测完成，共检测 ${uniqueIps.length} 个 IP`;
+};
+
+/* ========== 14. BGP 抽屉 ========== */
 let drawerOpen = false;
 function openBgpDrawer(node) {
   const drawer = $('bgpDrawer'), mask = $('drawerMask'), body = $('drawerBody');
@@ -643,21 +757,14 @@ function openBgpDrawer(node) {
       <div class="bgp-row"><span>栈</span><b>IPv${node.stack}</b></div>
     </div>
     
-    <div class="bgp-section" id="ipQualityExt"><div class="bgp-loading">正在检测 IP 质量...</div></div>
-    
     <div class="bgp-section" id="bgpIpExt"><div class="bgp-loading">正在查询 BGP 路由信息…</div></div>
-    
     <div class="bgp-section" id="bgpAsExt"><div class="bgp-loading">正在查询 AS 信息…</div></div>
     
-    <div class="bgp-foot">数据来源：RIPEstat · ipapi.is</div>`;
+    <div class="bgp-foot">数据来源：RIPEstat</div>`;
 
   drawer.classList.add('show'); mask.classList.add('show');
   drawerOpen = true;
 
-  // 并发查询所有数据
-  const qTask = fetchIPQuality(node.ip).then(d => renderIPQuality(d)).catch(e => {
-    $('ipQualityExt').innerHTML = `<div class="bgp-error">质量检测失败：${escapeHtml(e.message)}</div>`;
-  });
   const ipTask = fetchBGPForIP(node.ip).then(d => renderBgpIpExt(d)).catch(e => {
     $('bgpIpExt').innerHTML = `<div class="bgp-error">BGP 查询失败：${escapeHtml(e.message)}</div>`;
   });
@@ -667,53 +774,7 @@ function openBgpDrawer(node) {
       })
     : Promise.resolve($('bgpAsExt').innerHTML = '<div class="bgp-empty">无 ASN 信息</div>');
   
-  Promise.all([qTask, ipTask, asnTask]);
-}
-
-function renderIPQuality(q) {
-  const el = $('ipQualityExt'); if (!el) return;
-  if (!q) {
-    el.innerHTML = `<div class="bgp-empty">无法获取质量数据（接口超时或被拦截）</div>`;
-    return;
-  }
-  
-  const rows = [];
-  // 原生/广播
-  const nativeStr = q.isNative 
-    ? '<span class="ok">原生 IP</span> <span style="font-size:11px;color:#6b7280">(ASN 与 IP 属地一致)</span>'
-    : '<span class="warn">广播 IP</span> <span style="font-size:11px;color:#6b7280">(ASN 与 IP 属地不一致)</span>';
-  rows.push(`<div class="bgp-row"><span>IP 属性</span><b>${nativeStr}</b></div>`);
-
-  // IP 类型
-  let typeLabel = '住宅 IP';
-  let typeClass = 'ok';
-  if (q.is_datacenter) { typeLabel = '数据中心 / 机房'; typeClass = 'warn'; }
-  else if (q.is_mobile) { typeLabel = '移动网络'; typeClass = 'warn'; }
-  rows.push(`<div class="bgp-row"><span>IP 类型</span><b><span class="${typeClass}">${typeLabel}</span></b></div>`);
-
-  // 风险标签
-  const risks = [];
-  if (q.is_vpn) risks.push('<span class="badge risk">VPN</span>');
-  if (q.is_proxy) risks.push('<span class="badge risk">代理</span>');
-  if (q.is_tor) risks.push('<span class="badge risk">Tor</span>');
-  if (q.is_abuser) risks.push('<span class="badge risk">滥用者</span>');
-  if (q.is_crawler) risks.push('<span class="badge risk">爬虫</span>');
-  
-  if (risks.length) {
-    rows.push(`<div class="bgp-row"><span>风险标签</span><b style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${risks.join('')}</b></div>`);
-  } else {
-    rows.push(`<div class="bgp-row"><span>风险标签</span><b><span class="ok">未发现明显风险</span></b></div>`);
-  }
-
-  // 公司 & 评分
-  if (q.company) {
-    rows.push(`<div class="bgp-row"><span>公司</span><b>${escapeHtml(q.company)}</b></div>`);
-  }
-  if (q.abuser_score && q.abuser_score !== '0') {
-    rows.push(`<div class="bgp-row"><span>滥用评分</span><b>${escapeHtml(q.abuser_score)}</b></div>`);
-  }
-
-  el.innerHTML = `<div class="bgp-title">IP 质量</div>${rows.join('')}`;
+  Promise.all([ipTask, asnTask]);
 }
 
 function renderBgpIpExt(d) {
@@ -760,7 +821,7 @@ $('drawerClose').onclick = closeBgpDrawer;
 $('drawerMask').onclick = closeBgpDrawer;
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen) closeBgpDrawer(); });
 
-/* ========== 15. IP / ASN 查询 ========== */
+/* ========== 15. 独立 IP / ASN 查询 ========== */
 $('queryBtn').onclick = async () => {
   const q = $('queryInput').value.trim();
   if (!q) return;
@@ -772,29 +833,12 @@ $('queryBtn').onclick = async () => {
       el.innerHTML = `<div class="query-card"><div class="bgp-title">AS 信息</div>${renderQueryAsHTML(d)}</div>`;
     } else {
       const d = await fetchBGPForIP(q);
-      const quality = await fetchIPQuality(q);
-      el.innerHTML = `<div class="query-card">
-        <div class="bgp-title">IP 质量</div>${renderQueryQualityHTML(quality)}
-        <div class="bgp-title" style="margin-top:16px">BGP 路由</div>${renderQueryIpHTML(q, d)}
-      </div>`;
+      el.innerHTML = `<div class="query-card"><div class="bgp-title">BGP 路由</div>${renderQueryIpHTML(q, d)}</div>`;
     }
   } catch (e) {
     el.innerHTML = `<div class="bgp-error">查询失败：${escapeHtml(e.message)}</div>`;
   }
 };
-
-function renderQueryQualityHTML(q) {
-  if (!q) return '<div class="bgp-empty">无数据</div>';
-  let html = '';
-  html += `<div class="bgp-row"><span>IP 属性</span><b>${q.isNative ? '<span class="ok">原生 IP</span>' : '<span class="warn">广播 IP</span>'}</b></div>`;
-  let type = q.is_datacenter ? '机房' : q.is_mobile ? '移动网络' : '住宅';
-  html += `<div class="bgp-row"><span>IP 类型</span><b>${type}</b></div>`;
-  const r = [];
-  if (q.is_vpn) r.push('VPN'); if (q.is_proxy) r.push('代理'); if (q.is_tor) r.push('Tor');
-  if (q.is_abuser) r.push('滥用'); if (q.is_crawler) r.push('爬虫');
-  html += `<div class="bgp-row"><span>风险标签</span><b>${r.length ? r.map(x => `<span class="badge risk">${x}</span>`).join('') : '<span class="ok">无</span>'}</b></div>`;
-  return html;
-}
 
 function renderQueryIpHTML(ip, d) {
   const rows = [];
@@ -934,11 +978,18 @@ async function runWithNodes(nodes) {
   if (!nodes.length) { setStatus('没有解析到任何节点'); return; }
   try {
     const results = await analyzeNodes(nodes);
+    currentNodesData = results;
+    
+    // 清空旧的检测结果
+    $('qualityTableWrap').innerHTML = '';
+    $('qualityTableWrap').style.display = 'none';
+    $('qualityStatus').textContent = '';
+
     renderTable(results);
     renderTopo(results);
     renderProfile(results);
     renderCountryStats(results);
-    setStatus(`检测完成，共 ${results.length} 个节点（点击拓扑图 IP 卡片可查看 BGP 与 IP 质量）`);
+    setStatus(`检测完成，共 ${results.length} 个节点`);
   } catch (e) { setStatus('检测失败: ' + e.message); }
 }
 
@@ -968,9 +1019,11 @@ $('clearBtn').onclick = () => {
   $('profileTags').innerHTML = '';
   $('countryStats').innerHTML = '';
   $('diagResult').innerHTML = ''; $('queryResult').innerHTML = '';
+  $('qualityTableWrap').innerHTML = ''; $('qualityTableWrap').style.display = 'none';
+  $('qualityStatus').textContent = '';
   ['protocolChart','regionChart','orgChart','topoChart'].forEach(id => {
     const el = $(id); if (el) { const c = echarts.getInstanceByDom(el); if (c) c.clear(); }
   });
-  currentTopoRows = null; closeBgpDrawer(); hideIpPopover();
+  currentTopoRows = null; currentNodesData = []; closeBgpDrawer(); hideIpPopover();
   setStatus('等待输入...');
 };
