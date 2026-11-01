@@ -3,51 +3,79 @@ export async function onRequest({ request }) {
 
   if (!ip) {
     return Response.json(
-      { success: false, error: "Cloudflare 未提供访客 IP。" },
-      { status: 400, headers: { "Cache-Control": "no-store" } }
+      {
+        success: false,
+        error: "没有收到 CF-Connecting-IP。请确认站点已部署在 Cloudflare Pages。"
+      },
+      {
+        status: 400,
+        headers: { "Cache-Control": "no-store" }
+      }
     );
   }
 
   try {
-    const response = await fetch(
+    const upstream = await fetch(
       `https://ipwho.is/${encodeURIComponent(ip)}`,
-      { headers: { Accept: "application/json" } }
+      {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(10000)
+      }
     );
 
-    if (!response.ok) {
-      throw new Error("IP 信息服务暂时不可用。");
+    const rawBody = await upstream.text();
+
+    let result;
+    try {
+      result = JSON.parse(rawBody);
+    } catch {
+      throw new Error(
+        `ipwho.is 返回了无效 JSON（HTTP ${upstream.status}）。`
+      );
     }
 
-    const result = await response.json();
+    if (!upstream.ok) {
+      throw new Error(`ipwho.is 请求失败（HTTP ${upstream.status}）。`);
+    }
 
-    if (!result.success) {
-      throw new Error(result.message || "IP 信息查询失败。");
+    if (result.success !== true) {
+      throw new Error(result.message || "ipwho.is 未能查询该 IP。");
     }
 
     const connection = result.connection || {};
-    const locationParts = [
+    const location = [
       result.city,
       result.region,
       result.country
-    ].filter(Boolean);
+    ].filter(Boolean).join("，");
 
     return Response.json(
       {
         success: true,
         ip: result.ip || ip,
-        location: locationParts.join("，") || null,
+        location: location || null,
         isp: connection.isp || connection.org || null,
-        asn: connection.asn ? `AS${connection.asn}` : null
+        asn: connection.asn
+          ? `AS${String(connection.asn).replace(/^AS/i, "")}`
+          : null
       },
-      { headers: { "Cache-Control": "no-store" } }
+      {
+        status: 200,
+        headers: { "Cache-Control": "no-store" }
+      }
     );
   } catch (error) {
+    const message =
+      error?.name === "TimeoutError" || error?.name === "AbortError"
+        ? "查询 IP 信息超时，请稍后重试。"
+        : error?.message || "查询 IP 信息时发生未知错误。";
+
     return Response.json(
+      { success: false, error: message },
       {
-        success: false,
-        error: error.message || "查询网络信息时发生错误。"
-      },
-      { status: 502, headers: { "Cache-Control": "no-store" } }
+        status: 502,
+        headers: { "Cache-Control": "no-store" }
+      }
     );
   }
 }
