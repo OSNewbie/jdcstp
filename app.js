@@ -1,12 +1,24 @@
-// 这一行会在控制台打印，确认你加载的是最新代码
-console.log("%c[APP.JS] 终极防弹版 已成功加载", "background: #10b981; color: #fff; padding: 4px; border-radius: 4px;");
-
+// VERSION: 2024-FINAL
 const $ = id => document.getElementById(id);
 const bind = (id, event, fn) => { const el = $(id); if (el) el.addEventListener(event, fn); };
-const setHtml = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
 const setText = (id, text) => { const el = $(id); if (el) el.textContent = text; };
 
-/* ========== 工具 ========== */
+/* ========== 工具：带超时的 Fetch ========== */
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 8000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
+
+/* ========== 工具：Base64 ========== */
 function b64decode(str) {
   str = String(str).trim().replace(/\s+/g, '');
   str = str.replace(/-/g, '+').replace(/_/g, '/');
@@ -25,11 +37,11 @@ const ASN_MAP = {
   'AS13335':'Cloudflare','AS8075':'微软','AS20940':'Akamai','AS32934':'Facebook',
   'AS2906':'Netflix','AS63949':'Linode','AS14061':'DigitalOcean','AS20473':'Vultr',
   'AS24940':'Hetzner','AS16276':'OVH','AS37963':'阿里云','AS45090':'腾讯云',
-  'AS55990':'华为云','AS58519':'百度云','AS38365':'百度云',
-  'AS3491':'PCCW','AS12956':'Telxius','AS7018':'AT&T','AS6830':'Liberty',
-  'AS6762':'Sparkle','AS6461':'Zayo','AS6453':'TATA','AS5511':'Orange',
-  'AS3356':'Lumen','AS3320':'DTAG','AS3257':'GTT','AS2914':'NTT',
-  'AS1299':'Arelion','AS701':'Verizon','AS174':'Cogent','AS6939':'Hurricane',
+  'AS55990':'华为云','AS58519':'百度云','AS38365':'百度云','AS3491':'PCCW',
+  'AS12956':'Telxius','AS7018':'AT&T','AS6830':'Liberty','AS6762':'Sparkle',
+  'AS6461':'Zayo','AS6453':'TATA','AS5511':'Orange','AS3356':'Lumen',
+  'AS3320':'DTAG','AS3257':'GTT','AS2914':'NTT','AS1299':'Arelion',
+  'AS701':'Verizon','AS174':'Cogent','AS6939':'Hurricane',
 };
 const REGION_MAP = {
   'HK':'香港','IT':'意大利','FR':'法国','DE':'德国','US':'美国','JP':'日本',
@@ -64,18 +76,13 @@ const ORG_MAP = {
   'Google LLC':'谷歌','Google Cloud':'谷歌云','Google':'谷歌',
   'Microsoft Corporation':'微软','Microsoft':'微软','Microsoft Azure':'微软云',
   'Oracle Corporation':'甲骨文','Oracle Cloud':'甲骨文云','Oracle':'甲骨文',
-  'Cloudflare, Inc.':'Cloudflare','Cloudflare':'Cloudflare',
-  'DigitalOcean, LLC':'DigitalOcean','DigitalOcean':'DigitalOcean',
-  'Linode, LLC':'Linode','Linode':'Linode','Akamai':'Akamai',
-  'Vultr Holdings, LLC':'Vultr','Vultr':'Vultr',
-  'Hetzner Online GmbH':'Hetzner','Hetzner':'Hetzner',
-  'OVH SAS':'OVH','OVH':'OVH',
-  'Alibaba (US) Technology Co., Ltd.':'阿里云',
-  'Tencent Cloud':'腾讯云','Huawei Cloud':'华为云','Baidu':'百度云',
-  'Chunghwa Telecom Co. Ltd.':'中华电信',
-  'Hong Kong Telecommunications (HKT) Limited':'香港电讯',
-  'Netvigator':'网上行','Facebook':'Facebook','Netflix':'Netflix',
-  'PCCW Limited':'PCCW','PCCW Global':'PCCW',
+  'Cloudflare, Inc.':'Cloudflare','Cloudflare':'Cloudflare','DigitalOcean, LLC':'DigitalOcean',
+  'DigitalOcean':'DigitalOcean','Linode, LLC':'Linode','Linode':'Linode',
+  'Akamai':'Akamai','Vultr Holdings, LLC':'Vultr','Vultr':'Vultr',
+  'Hetzner Online GmbH':'Hetzner','Hetzner':'Hetzner','OVH SAS':'OVH','OVH':'OVH',
+  'Alibaba (US) Technology Co., Ltd.':'阿里云','Tencent Cloud':'腾讯云','Huawei Cloud':'华为云',
+  'Baidu':'百度云','Chunghwa Telecom Co. Ltd.':'中华电信','Hong Kong Telecommunications (HKT) Limited':'香港电讯',
+  'Netvigator':'网上行','Facebook':'Facebook','Netflix':'Netflix','PCCW Limited':'PCCW','PCCW Global':'PCCW',
 };
 
 /* ========== 1. 订阅解析 ========== */
@@ -96,7 +103,6 @@ function parseSubscription(text) {
   }
   return nodes;
 }
-
 function parseUri(uri) {
   try {
     const scheme = (uri.match(/^([a-z0-9+]+):\/\//i) || [])[1]?.toLowerCase();
@@ -122,7 +128,6 @@ function parseUri(uri) {
     return { name: name || `${host}:${port}`, server: host, port: String(port), type: scheme };
   } catch { return null; }
 }
-
 function parseVmess(uri) {
   try {
     const json = JSON.parse(b64decode(uri.slice('vmess://'.length)));
@@ -132,7 +137,6 @@ function parseVmess(uri) {
     };
   } catch { return null; }
 }
-
 function parseClashYaml(text) {
   const proxies = [];
   let inProxies = false, current = null;
@@ -154,13 +158,12 @@ function parseClashYaml(text) {
   }
   flush();
   return proxies.filter(p => p.server).map(p => ({
-    name: p.name || `${p.server}:${p.port}`,
-    server: p.server, port: String(p.port || ''), type: p.type || 'unknown',
+    name: p.name || `${p.server}:${p.port}`, server: p.server, port: String(p.port || ''), type: p.type || 'unknown',
   }));
 }
 const stripQuote = s => s.trim().replace(/^["']|["']$/g, '');
 
-/* ========== 2. DNS ========== */
+/* ========== 2. DNS 解析 ========== */
 const DOH_ENDPOINTS = [
   'https://cloudflare-dns.com/dns-query',
   'https://dns.google/resolve',
@@ -171,8 +174,7 @@ async function resolveIP(host) {
   if (host.includes(':')) return host;
   for (const url of DOH_ENDPOINTS) {
     try {
-      const res = await fetch(`${url}?name=${encodeURIComponent(host)}&type=A`,
-        { headers: { accept: 'application/dns-json' } });
+      const res = await fetchWithTimeout(`${url}?name=${encodeURIComponent(host)}&type=A`, { headers: { accept: 'application/dns-json' }, timeout: 4000 });
       if (!res.ok) continue;
       const data = await res.json();
       const a = (data.Answer || []).find(x => x.type === 1);
@@ -182,46 +184,54 @@ async function resolveIP(host) {
   return '';
 }
 
-/* ========== 3. GeoIP ========== */
+/* ========== 3. GeoIP 三接口强力兜底 ========== */
 async function fetchGeoIP(ip) {
+  // 1. ipwho.is
   try {
-    const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
+    const res = await fetchWithTimeout(`https://ipwho.is/${ip}`, { timeout: 5000 });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.success && d.country_code) {
+        return {
+          ip: d.ip || ip, asn: d.connection?.asn || '', org: d.connection?.isp || d.connection?.org || '',
+          country_code: d.country_code, region: d.region || '', city: d.city || '',
+          lat: d.latitude || 0, lon: d.longitude || 0
+        };
+      }
+    }
+  } catch (e) {}
+
+  // 2. geojs.io (极其稳定)
+  try {
+    const res = await fetchWithTimeout(`https://get.geojs.io/v1/ip/geo/${ip}.json`, { timeout: 5000 });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.country_code) {
+        return {
+          ip: d.ip || ip, asn: d.asn || '', org: d.organization_name || '',
+          country_code: d.country_code, region: d.region || '', city: d.city || '',
+          lat: parseFloat(d.latitude) || 0, lon: parseFloat(d.longitude) || 0
+        };
+      }
+    }
+  } catch (e) {}
+
+  // 3. ipapi.is
+  try {
+    const res = await fetchWithTimeout(`https://api.ipapi.is/?q=${ip}`, { timeout: 5000 });
     if (res.ok) {
       const d = await res.json();
       if (d.location && d.location.country_code) {
         return {
-          ip: d.ip || ip,
-          asn: d.asn?.asn || '',
-          org: d.asn?.org || d.company?.name || '',
-          country_code: d.location.country_code,
-          region: d.location.state || '',
-          city: d.location.city || '',
-          lat: d.location.latitude || 0,
-          lon: d.location.longitude || 0
+          ip: d.ip || ip, asn: d.asn?.asn || '', org: d.asn?.org || d.company?.name || '',
+          country_code: d.location.country_code, region: d.location.state || '', city: d.location.city || '',
+          lat: d.location.latitude || 0, lon: d.location.longitude || 0
         };
       }
     }
-  } catch (e) { console.warn('ipapi.is 失败', e); }
+  } catch (e) {}
 
-  try {
-    const res = await fetch(`https://ipwho.is/${ip}`);
-    if (res.ok) {
-      const d = await res.json();
-      if (d.success !== false && d.country_code) {
-        return {
-          ip: d.ip || ip,
-          asn: d.connection?.asn || '',
-          org: d.connection?.isp || d.connection?.org || '',
-          country_code: d.country_code,
-          region: d.region || '',
-          city: d.city || '',
-          lat: d.latitude || 0,
-          lon: d.longitude || 0
-        };
-      }
-    }
-  } catch (e) { console.warn('ipwho.is 失败', e); }
-  return null;
+  return { _error: true }; // 全挂了，标记错误
 }
 
 /* ========== 4. 中文本地化 ========== */
@@ -232,17 +242,12 @@ function localizeOrg(asn, org) {
   if (ORG_MAP[raw]) return ORG_MAP[raw];
   let s = raw;
   const rules = [
-    [/Amazon\.com,? Inc\.?/gi, '亚马逊'],[/Amazon\.com/gi, '亚马逊'],
-    [/Amazon Data Services/gi, '亚马逊云'],[/\bAWS\b/gi, '亚马逊云'],
-    [/Google LLC/gi, '谷歌'],[/Google Cloud/gi, '谷歌云'],
-    [/Microsoft Corporation/gi, '微软'],[/Oracle Corporation/gi, '甲骨文'],
-    [/Oracle Cloud/gi, '甲骨文云'],[/Cloudflare,? Inc\.?/gi, 'Cloudflare'],
-    [/DigitalOcean,? LLC/gi, 'DigitalOcean'],[/Linode,? LLC/gi, 'Linode'],
-    [/Vultr Holdings,? LLC/gi, 'Vultr'],[/Hetzner Online GmbH/gi, 'Hetzner'],
-    [/OVH SAS/gi, 'OVH'],[/Alibaba.*?Technology.*/gi, '阿里云'],
-    [/Tencent Cloud/gi, '腾讯云'],[/Huawei Cloud/gi, '华为云'],
-    [/Chunghwa Telecom.*/gi, '中华电信'],
-    [/Hong Kong Telecommunications.*/gi, '香港电讯'],[/Netvigator/gi, '网上行'],
+    [/Amazon\.com,? Inc\.?/gi, '亚马逊'],[/Amazon\.com/gi, '亚马逊'],[/Amazon Data Services/gi, '亚马逊云'],[/\bAWS\b/gi, '亚马逊云'],
+    [/Google LLC/gi, '谷歌'],[/Google Cloud/gi, '谷歌云'],[/Microsoft Corporation/gi, '微软'],[/Oracle Corporation/gi, '甲骨文'],
+    [/Oracle Cloud/gi, '甲骨文云'],[/Cloudflare,? Inc\.?/gi, 'Cloudflare'],[/DigitalOcean,? LLC/gi, 'DigitalOcean'],
+    [/Linode,? LLC/gi, 'Linode'],[/Vultr Holdings,? LLC/gi, 'Vultr'],[/Hetzner Online GmbH/gi, 'Hetzner'],[/OVH SAS/gi, 'OVH'],
+    [/Alibaba.*?Technology.*/gi, '阿里云'],[/Tencent Cloud/gi, '腾讯云'],[/Huawei Cloud/gi, '华为云'],
+    [/Chunghwa Telecom.*/gi, '中华电信'],[/Hong Kong Telecommunications.*/gi, '香港电讯'],[/Netvigator/gi, '网上行'],
   ];
   for (const [re, zh] of rules) s = s.replace(re, zh);
   return s || '未知';
@@ -256,7 +261,7 @@ function localizeCity(city, region) {
   return city || region || '未知';
 }
 
-/* ========== 5. 节点分析 ========== */
+/* ========== 5. 节点分析 (串行延迟) ========== */
 let currentNodesData = []; 
 async function analyzeNodes(nodes) {
   setText('status', `共 ${nodes.length} 个节点，正在解析 DNS...`);
@@ -273,15 +278,23 @@ async function analyzeNodes(nodes) {
   
   for (let i = 0; i < uniqueIPs.length; i++) {
     const ip = uniqueIPs[i];
-    setText('status', `GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip} (防止限流，请稍候...)`);
+    setText('status', `GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip} (防止限流...)`);
     const geo = await fetchGeoIP(ip);
     if (geo) geoMap[ip] = geo;
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise(r => setTimeout(r, 200));
   }
 
   return nodes.map((n, idx) => {
     const ip = ipMap[n.server] || '';
     const geo = geoMap[ip] || {};
+    if (geo._error) {
+      return {
+        id: idx + 1, name: n.name, server: n.server, port: n.port,
+        protocol: String(n.type || 'unknown').toLowerCase(),
+        ip: ip || '-', region: '获取失败', country_code: '', asn: '获取失败', org: '获取失败', operator: '',
+        detail: '获取失败', stack: ip.includes(':') ? 6 : 4, lat: 0, lon: 0,
+      };
+    }
     const asnRaw = geo.asn || '0';
     return {
       id: idx + 1, name: n.name, server: n.server, port: n.port,
@@ -295,7 +308,7 @@ async function analyzeNodes(nodes) {
   });
 }
 
-/* ========== 6. 表格 ========== */
+/* ========== 6. 表格渲染 ========== */
 function renderTable(rows) {
   const tbody = document.querySelector('#resultTable tbody');
   if (!tbody) return;
@@ -350,7 +363,7 @@ document.addEventListener('click', e => {
 });
 window.addEventListener('scroll', hideIpPopover, true);
 
-/* ========== 8. 国旗工具 ========== */
+/* ========== 8. 国旗 ========== */
 function countryFlag(code) {
   if (!code || code.length !== 2 || code === 'XX') return '🏳️';
   const A = 0x1F1E6;
@@ -361,12 +374,13 @@ function countryFlag(code) {
   return String.fromCodePoint(A + l1, A + l2);
 }
 
-/* ========== 9. 国家 / 地区分布 ========== */
+/* ========== 9. 国家分布 ========== */
 function renderCountryStats(rows) {
   const el = $('countryStats'); if (!el) return;
   const map = {};
   rows.forEach(r => {
-    const code = (r.country_code || 'XX').toUpperCase();
+    if (!r.country_code) return;
+    const code = r.country_code.toUpperCase();
     const name = r.region || '未知';
     if (!map[code]) map[code] = { code, name, count: 0 };
     map[code].count++;
@@ -396,8 +410,8 @@ function renderProfile(rows) {
   const protocolCount = {}, regionCount = {}, orgCount = {};
   rows.forEach(r => {
     protocolCount[r.protocol] = (protocolCount[r.protocol] || 0) + 1;
-    regionCount[r.region] = (regionCount[r.region] || 0) + 1;
-    orgCount[r.org] = (orgCount[r.org] || 0) + 1;
+    if (r.region !== '获取失败') regionCount[r.region] = (regionCount[r.region] || 0) + 1;
+    if (r.org !== '获取失败') orgCount[r.org] = (orgCount[r.org] || 0) + 1;
   });
   const topOrg = Object.entries(orgCount).sort((a, b) => b[1] - a[1])[0]?.[0] || '-';
   const tags = [
@@ -590,7 +604,7 @@ async function ripestat(call, resource) {
   const key = `${call}:${resource}`;
   if (bgpCache.has(key)) return bgpCache.get(key);
   const url = `https://stat.ripe.net/data/${call}/data.json?resource=${encodeURIComponent(resource)}`;
-  const res = await fetch(url);
+  const res = await fetchWithTimeout(url, { timeout: 6000 });
   if (!res.ok) throw new Error(`RIPEstat ${call} 失败`);
   const json = await res.json();
   bgpCache.set(key, json.data);
@@ -617,7 +631,7 @@ async function fetchASForASN(asn) {
 /* ========== 13. IP 质量自动检测 ========== */
 async function fetchIPQuality(ip) {
   try {
-    const res = await fetch(`https://api.ipapi.is/?q=${ip}`);
+    const res = await fetchWithTimeout(`https://api.ipapi.is/?q=${ip}`, { timeout: 5000 });
     if (!res.ok) return null;
     const data = await res.json();
     const isNative = data.asn?.country === data.location?.country_code;
@@ -641,7 +655,7 @@ async function autoDetectQuality(rows) {
   const status = $('qualityStatus');
   if (!wrap || !status) return;
   
-  const uniqueIps = [...new Set(rows.map(n => n.ip).filter(ip => ip && ip !== '-'))];
+  const uniqueIps = [...new Set(rows.map(n => n.ip).filter(ip => ip && ip !== '-' && ip !== '获取失败'))];
   if (!uniqueIps.length) {
     status.textContent = '没有可检测的 IP';
     return;
@@ -681,7 +695,7 @@ async function autoDetectQuality(rows) {
     
     if (tr) {
       if (!q) {
-        tr.cells[3].innerHTML = '<span class="no">获取失败</span>';
+        tr.cells[3].innerHTML = '<span class="no">请求失败</span>';
         tr.cells[4].innerHTML = '-';
         tr.cells[5].innerHTML = '-';
         tr.cells[6].innerHTML = '-';
@@ -709,7 +723,7 @@ async function autoDetectQuality(rows) {
     
     completed++;
     status.textContent = `自动检测进度: ${completed}/${uniqueIps.length}`;
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise(r => setTimeout(r, 200));
   }
   
   status.textContent = `✅ 质量检测全部完成，共检测 ${uniqueIps.length} 个 IP`;
@@ -746,7 +760,7 @@ function openBgpDrawer(node) {
   const ipTask = fetchBGPForIP(node.ip).then(d => renderBgpIpExt(d)).catch(e => {
     const el = $('bgpIpExt'); if (el) el.innerHTML = `<div class="bgp-error">BGP 查询失败：${escapeHtml(e.message)}</div>`;
   });
-  const asnTask = node.asn && node.asn !== 'AS0'
+  const asnTask = node.asn && node.asn !== 'AS0' && node.asn !== '获取失败'
     ? fetchASForASN(node.asn).then(d => renderBgpAsExt(d)).catch(e => {
         const el = $('bgpAsExt'); if (el) el.innerHTML = `<div class="bgp-error">AS 查询失败：${escapeHtml(e.message)}</div>`;
       })
@@ -898,7 +912,7 @@ bind('diagEgress', 'click', async () => {
   ];
   const results = await Promise.all(apis.map(async a => {
     try {
-      const r = await fetch(a.url);
+      const r = await fetchWithTimeout(a.url, { timeout: 5000 });
       if (!r.ok) throw new Error();
       const ct = r.headers.get('content-type') || '';
       const data = ct.includes('json') ? await r.json() : await r.text();
@@ -929,8 +943,7 @@ bind('diagDns', 'click', async () => {
     const t0 = performance.now();
     let dohIps = [], ok = false;
     try {
-      const r = await fetch(`https://cloudflare-dns.com/dns-query?name=${d}&type=A`,
-        { headers: { accept: 'application/dns-json' } });
+      const r = await fetchWithTimeout(`https://cloudflare-dns.com/dns-query?name=${d}&type=A`, { headers: { accept: 'application/dns-json' }, timeout: 5000 });
       const j = await r.json();
       dohIps = (j.Answer || []).filter(a => a.type === 1).map(a => a.data);
       ok = true;
