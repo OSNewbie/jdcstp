@@ -1,16 +1,23 @@
-export async function onRequest({ request }) {
+function json(data, status = 200) {
+  return Response.json(data, {
+    status,
+    headers: {
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+
+export async function onRequestGet({ request }) {
   const ip = request.headers.get("CF-Connecting-IP");
 
   if (!ip) {
-    return Response.json(
+    return json(
       {
         success: false,
-        error: "没有收到 CF-Connecting-IP。请确认站点已部署在 Cloudflare Pages。"
+        error: "未收到 Cloudflare 访客 IP 请求头。请确认请求经过 Cloudflare Pages。"
       },
-      {
-        status: 400,
-        headers: { "Cache-Control": "no-store" }
-      }
+      400
     );
   }
 
@@ -23,23 +30,39 @@ export async function onRequest({ request }) {
       }
     );
 
-    const rawBody = await upstream.text();
+    const text = await upstream.text();
 
     let result;
     try {
-      result = JSON.parse(rawBody);
+      result = JSON.parse(text);
     } catch {
-      throw new Error(
-        `ipwho.is 返回了无效 JSON（HTTP ${upstream.status}）。`
+      return json(
+        {
+          success: false,
+          error: `IP 查询服务返回非 JSON 内容（HTTP ${upstream.status}）。`
+        },
+        502
       );
     }
 
     if (!upstream.ok) {
-      throw new Error(`ipwho.is 请求失败（HTTP ${upstream.status}）。`);
+      return json(
+        {
+          success: false,
+          error: `IP 查询服务请求失败（HTTP ${upstream.status}）。`
+        },
+        502
+      );
     }
 
     if (result.success !== true) {
-      throw new Error(result.message || "ipwho.is 未能查询该 IP。");
+      return json(
+        {
+          success: false,
+          error: result.message || "IP 查询服务未能查询该地址。"
+        },
+        502
+      );
     }
 
     const connection = result.connection || {};
@@ -49,33 +72,36 @@ export async function onRequest({ request }) {
       result.country
     ].filter(Boolean).join("，");
 
-    return Response.json(
-      {
-        success: true,
-        ip: result.ip || ip,
-        location: location || null,
-        isp: connection.isp || connection.org || null,
-        asn: connection.asn
-          ? `AS${String(connection.asn).replace(/^AS/i, "")}`
-          : null
-      },
-      {
-        status: 200,
-        headers: { "Cache-Control": "no-store" }
-      }
-    );
+    return json({
+      success: true,
+      ip: result.ip || ip,
+      location: location || "暂无位置数据",
+      isp: connection.isp || connection.org || "暂无 ISP 数据",
+      asn: connection.asn
+        ? `AS${String(connection.asn).replace(/^AS/i, "")}`
+        : "暂无 ASN 数据"
+    });
   } catch (error) {
     const message =
       error?.name === "TimeoutError" || error?.name === "AbortError"
         ? "查询 IP 信息超时，请稍后重试。"
-        : error?.message || "查询 IP 信息时发生未知错误。";
+        : error?.message || "服务器查询 IP 信息时发生错误。";
 
-    return Response.json(
-      { success: false, error: message },
-      {
-        status: 502,
-        headers: { "Cache-Control": "no-store" }
-      }
-    );
+    return json({ success: false, error: message }, 502);
   }
+}
+
+// 方便确认 Pages Function 是否已部署：打开 /api/check?health=1
+export async function onRequest({ request, next }) {
+  const url = new URL(request.url);
+
+  if (url.pathname === "/api/check" && url.searchParams.get("health") === "1") {
+    return json({ success: true, function: "api/check", status: "online" });
+  }
+
+  if (request.method !== "GET") {
+    return json({ success: false, error: "仅支持 GET 请求。" }, 405);
+  }
+
+  return onRequestGet({ request });
 }
