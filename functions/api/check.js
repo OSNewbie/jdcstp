@@ -1,54 +1,53 @@
-export async function onRequestGet({ request }) {
+export async function onRequest({ request }) {
   const ip = request.headers.get("CF-Connecting-IP");
 
   if (!ip) {
     return Response.json(
-      { error: "无法读取访问者 IP" },
-      {
-        status: 400,
-        headers: { "Cache-Control": "no-store" }
-      }
+      { success: false, error: "Cloudflare 未提供访客 IP。" },
+      { status: 400, headers: { "Cache-Control": "no-store" } }
     );
   }
 
   try {
-    const url = `https://ipwho.is/${encodeURIComponent(ip)}`;
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" }
-    });
+    const response = await fetch(
+      `https://ipwho.is/${encodeURIComponent(ip)}`,
+      { headers: { Accept: "application/json" } }
+    );
 
     if (!response.ok) {
-      throw new Error("IP 信息源暂时不可用");
+      throw new Error("IP 信息服务暂时不可用。");
     }
 
-    const info = await response.json();
+    const result = await response.json();
 
-    if (!info.success) {
-      throw new Error("没有查询到 IP 信息");
+    if (!result.success) {
+      throw new Error(result.message || "IP 信息查询失败。");
     }
+
+    const connection = result.connection || {};
+    const locationParts = [
+      result.city,
+      result.region,
+      result.country
+    ].filter(Boolean);
 
     return Response.json(
       {
-        ip: info.ip || ip,
-        city: info.city || "",
-        region: info.region || "",
-        country: info.country || "",
-        org: info.connection?.org || info.connection?.isp || "",
-        asn: info.connection?.asn
-          ? `AS${info.connection.asn}`
-          : ""
+        success: true,
+        ip: result.ip || ip,
+        location: locationParts.join("，") || null,
+        isp: connection.isp || connection.org || null,
+        asn: connection.asn ? `AS${connection.asn}` : null
       },
-      {
-        headers: { "Cache-Control": "no-store" }
-      }
+      { headers: { "Cache-Control": "no-store" } }
     );
-  } catch {
+  } catch (error) {
     return Response.json(
-      { error: "IP 信息源暂时不可用" },
       {
-        status: 502,
-        headers: { "Cache-Control": "no-store" }
-      }
+        success: false,
+        error: error.message || "查询网络信息时发生错误。"
+      },
+      { status: 502, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
