@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- VERSION: 2024-IPQUALITY -->
+<!-- VERSION: 2024-QUALITY-PANEL -->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -51,8 +51,15 @@
     <div id="orgChart" class="chart"></div>
   </div>
 
-  <h2>拓扑图 <span class="hint">（点击 IP 卡片查看 BGP 与 IP 质量详情）</span></h2>
+  <h2>拓扑图 <span class="hint">（点击 IP 卡片查看 BGP 路由）</span></h2>
   <div id="topoChart" class="topo"></div>
+
+  <h2>IP 质量评估 <span class="hint">（独立检测节点 IP 的原生性、机房类型与风险）</span></h2>
+  <div class="input-row">
+    <button id="checkQualityBtn">开始检测节点质量</button>
+    <span id="qualityStatus" class="quality-status"></span>
+  </div>
+  <div id="qualityTableWrap" class="quality-table-wrap"></div>
 
   <h2>IP / ASN 查询</h2>
   <div class="input-row">
