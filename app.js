@@ -1,5 +1,10 @@
-// VERSION: 2024-AUTO-QUALITY-FIX
+// 这一行会在控制台打印，确认你加载的是最新代码
+console.log("%c[APP.JS] 终极防弹版 已成功加载", "background: #10b981; color: #fff; padding: 4px; border-radius: 4px;");
+
 const $ = id => document.getElementById(id);
+const bind = (id, event, fn) => { const el = $(id); if (el) el.addEventListener(event, fn); };
+const setHtml = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+const setText = (id, text) => { const el = $(id); if (el) el.textContent = text; };
 
 /* ========== 工具 ========== */
 function b64decode(str) {
@@ -10,18 +15,8 @@ function b64decode(str) {
   try { return decodeURIComponent(escape(bin)); } catch { return bin; }
 }
 
-window.addEventListener('error', e => {
-  const el = $('status'); if (el) el.textContent = '运行错误: ' + (e.message || e.error);
-});
-window.addEventListener('unhandledrejection', e => {
-  const el = $('status'); if (el) el.textContent = 'Promise 错误: ' + (e.reason?.message || e.reason);
-});
-
-// 安全绑定事件函数（元素不存在就跳过）
-function on(id, event, fn) {
-  const el = $(id);
-  if (el) el[event] = fn;
-}
+window.addEventListener('error', e => setText('status', '运行错误: ' + (e.message || e.error)));
+window.addEventListener('unhandledrejection', e => setText('status', 'Promise 错误: ' + (e.reason?.message || e.reason)));
 
 /* ========== 中文映射表 ========== */
 const ASN_MAP = {
@@ -264,13 +259,13 @@ function localizeCity(city, region) {
 /* ========== 5. 节点分析 ========== */
 let currentNodesData = []; 
 async function analyzeNodes(nodes) {
-  setStatus(`共 ${nodes.length} 个节点，正在解析 DNS...`);
+  setText('status', `共 ${nodes.length} 个节点，正在解析 DNS...`);
   const ipMap = {};
   const uniqueServers = [...new Set(nodes.map(n => n.server).filter(Boolean))];
   for (let i = 0; i < uniqueServers.length; i++) {
     const host = uniqueServers[i];
     ipMap[host] = await resolveIP(host);
-    setStatus(`DNS 解析 ${i + 1}/${uniqueServers.length}: ${host} → ${ipMap[host] || '失败'}`);
+    setText('status', `DNS 解析 ${i + 1}/${uniqueServers.length}: ${host} → ${ipMap[host] || '失败'}`);
   }
   
   const uniqueIPs = [...new Set(Object.values(ipMap).filter(Boolean))];
@@ -278,7 +273,7 @@ async function analyzeNodes(nodes) {
   
   for (let i = 0; i < uniqueIPs.length; i++) {
     const ip = uniqueIPs[i];
-    setStatus(`GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip} (防止限流，请稍候...)`);
+    setText('status', `GeoIP 检测 ${i + 1}/${uniqueIPs.length}: ${ip} (防止限流，请稍候...)`);
     const geo = await fetchGeoIP(ip);
     if (geo) geoMap[ip] = geo;
     await new Promise(r => setTimeout(r, 300));
@@ -303,6 +298,7 @@ async function analyzeNodes(nodes) {
 /* ========== 6. 表格 ========== */
 function renderTable(rows) {
   const tbody = document.querySelector('#resultTable tbody');
+  if (!tbody) return;
   tbody.innerHTML = rows.map(r => `
     <tr>
       <td>${r.id}</td>
@@ -367,8 +363,7 @@ function countryFlag(code) {
 
 /* ========== 9. 国家 / 地区分布 ========== */
 function renderCountryStats(rows) {
-  const el = $('countryStats');
-  if (!el) return;
+  const el = $('countryStats'); if (!el) return;
   const map = {};
   rows.forEach(r => {
     const code = (r.country_code || 'XX').toUpperCase();
@@ -724,10 +719,11 @@ async function autoDetectQuality(rows) {
 let drawerOpen = false;
 function openBgpDrawer(node) {
   const drawer = $('bgpDrawer'), mask = $('drawerMask'), body = $('drawerBody');
-  if (!drawer || !mask || !body) return;
+  const ipEl = $('drawerIp'), subEl = $('drawerSub');
+  if (!drawer || !mask || !body || !ipEl || !subEl) return;
   
-  $('drawerIp').textContent = node.ip;
-  $('drawerSub').textContent = `${node.org} · ${node.asn}`;
+  ipEl.textContent = node.ip;
+  subEl.textContent = `${node.org} · ${node.asn}`;
 
   body.innerHTML = `
     <div class="bgp-section">
@@ -800,15 +796,17 @@ function closeBgpDrawer() {
   if (m) m.classList.remove('show');
   drawerOpen = false;
 }
-on('drawerClose', 'onclick', closeBgpDrawer);
-on('drawerMask', 'onclick', closeBgpDrawer);
+bind('drawerClose', 'click', closeBgpDrawer);
+bind('drawerMask', 'click', closeBgpDrawer);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen) closeBgpDrawer(); });
 
 /* ========== 15. 独立 IP / ASN 查询 ========== */
-on('queryBtn', 'onclick', async () => {
-  const q = $('queryInput').value.trim();
+bind('queryBtn', 'click', async () => {
+  const input = $('queryInput'); if (!input) return;
+  const q = input.value.trim();
   if (!q) return;
-  const el = $('queryResult');
+  const el = $('queryResult'); if (!el) return;
+  
   el.innerHTML = '<div class="bgp-loading">查询中…</div>';
   try {
     if (/^AS\d+$/i.test(q)) {
@@ -844,8 +842,8 @@ function renderQueryAsHTML(d) {
 }
 
 /* ========== 16. WebRTC 泄漏检测 ========== */
-on('diagWebrtc', 'onclick', async () => {
-  const el = $('diagResult');
+bind('diagWebrtc', 'click', async () => {
+  const el = $('diagResult'); if (!el) return;
   el.innerHTML = '<div class="bgp-loading">正在收集 ICE candidates…</div>';
   const ips = await detectWebRTC();
   if (!ips.length) {
@@ -890,8 +888,8 @@ function isPrivate(ip) {
 }
 
 /* ========== 17. 出口 IP 一致性 ========== */
-on('diagEgress', 'onclick', async () => {
-  const el = $('diagResult');
+bind('diagEgress', 'click', async () => {
+  const el = $('diagResult'); if (!el) return;
   el.innerHTML = '<div class="bgp-loading">正在通过多个来源测试出口 IP…</div>';
   const apis = [
     { name: 'ipify', url: 'https://api.ipify.org?format=json', pick: d => d.ip },
@@ -922,8 +920,8 @@ on('diagEgress', 'onclick', async () => {
 });
 
 /* ========== 18. DNS 检查 ========== */
-on('diagDns', 'onclick', async () => {
-  const el = $('diagResult');
+bind('diagDns', 'click', async () => {
+  const el = $('diagResult'); if (!el) return;
   el.innerHTML = '<div class="bgp-loading">正在通过 DoH 测试解析…</div>';
   const testDomains = ['google.com', 'cloudflare.com', 'github.com'];
   const rows = [];
@@ -955,13 +953,9 @@ on('diagDns', 'onclick', async () => {
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
-function setStatus(msg) {
-  const el = $('status');
-  if (el) el.textContent = msg;
-}
 
 async function runWithNodes(nodes) {
-  if (!nodes.length) { setStatus('没有解析到任何节点'); return; }
+  if (!nodes.length) { setText('status', '没有解析到任何节点'); return; }
   try {
     const results = await analyzeNodes(nodes);
     currentNodesData = results;
@@ -976,18 +970,19 @@ async function runWithNodes(nodes) {
     renderProfile(results);
     renderCountryStats(results);
     
-    setStatus(`节点解析完成，准备进行质量检测...`);
+    setText('status', `节点解析完成，准备进行质量检测...`);
     await autoDetectQuality(results);
     
-    setStatus(`全部检测完成，共 ${results.length} 个节点`);
+    setText('status', `全部检测完成，共 ${results.length} 个节点`);
 
-  } catch (e) { setStatus('检测失败: ' + e.message); }
+  } catch (e) { setText('status', '检测失败: ' + e.message); }
 }
 
-on('loadUrl', 'onclick', async () => {
-  const url = $('subUrl').value.trim();
-  if (!url) return setStatus('请输入订阅 URL');
-  setStatus('拉取订阅中...');
+bind('loadUrl', 'click', async () => {
+  const input = $('subUrl'); if (!input) return;
+  const url = input.value.trim();
+  if (!url) return setText('status', '请输入订阅 URL');
+  setText('status', '拉取订阅中...');
   try {
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -997,20 +992,23 @@ on('loadUrl', 'onclick', async () => {
     const nodes = parseSubscription(text);
     await runWithNodes(nodes);
   } catch (e) {
-    setStatus('拉取失败: ' + e.message + '（请确认是否 CORS 受限，或换用粘贴解析）');
+    setText('status', '拉取失败: ' + e.message + '（请确认是否 CORS 受限，或换用粘贴解析）');
   }
 });
 
-on('loadText', 'onclick', async () => {
-  const text = $('subText').value.trim();
-  if (!text) return setStatus('请粘贴订阅内容');
-  setStatus('解析中...');
+bind('loadText', 'click', async () => {
+  const input = $('subText'); if (!input) return;
+  const text = input.value.trim();
+  if (!text) return setText('status', '请粘贴订阅内容');
+  setText('status', '解析中...');
   const nodes = parseSubscription(text);
   await runWithNodes(nodes);
 });
 
-on('clearBtn', 'onclick', () => {
-  $('subText').value = ''; $('subUrl').value = '';
+bind('clearBtn', 'click', () => {
+  const subText = $('subText'); if (subText) subText.value = '';
+  const subUrl = $('subUrl'); if (subUrl) subUrl.value = '';
+  
   const tb = document.querySelector('#resultTable tbody'); if (tb) tb.innerHTML = '';
   const pt = $('profileTags'); if (pt) pt.innerHTML = '';
   const cs = $('countryStats'); if (cs) cs.innerHTML = '';
@@ -1023,5 +1021,5 @@ on('clearBtn', 'onclick', () => {
     const el = $(id); if (el) { const c = echarts.getInstanceByDom(el); if (c) c.clear(); }
   });
   currentTopoRows = null; currentNodesData = []; closeBgpDrawer(); hideIpPopover();
-  setStatus('等待输入...');
+  setText('status', '等待输入...');
 });
