@@ -3,445 +3,230 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="检测公网 IP、WebRTC 和 IPv6 网络状态">
-  <title>网络检测中心</title>
-
+  <meta name="description" content="检查公网 IP、网络位置、IPv6 连通性和 WebRTC 候选地址。">
+  <title>网络诊断</title>
   <style>
     :root {
-      color-scheme: dark;
-      --bg: #0b1020;
-      --panel: #121b2e;
-      --panel-light: #17243b;
-      --line: #2a3a56;
-      --text: #edf3ff;
-      --muted: #9aa9c1;
-      --blue: #66a6ff;
-      --green: #48d7a0;
-      --yellow: #ffd27d;
+      color-scheme: light;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: #172033;
+      background: #f4f7fb;
     }
-
     * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(ellipse at 50% -20%, #213b65 0, transparent 50%),
-        var(--bg);
-      color: var(--text);
-      font: 15px/1.6 system-ui, -apple-system, BlinkMacSystemFont,
-            "Segoe UI", "Microsoft YaHei", sans-serif;
+    body { margin: 0; }
+    header { background: #fff; border-bottom: 1px solid #e5eaf1; }
+    .wrap { width: min(920px, calc(100% - 32px)); margin: auto; }
+    header .wrap { padding: 22px 0; }
+    h1 { margin: 0; font-size: 22px; }
+    main { padding: 28px 0 48px; }
+    .intro { color: #5c667a; margin: 0 0 20px; }
+    .card {
+      background: #fff; border: 1px solid #e5eaf1; border-radius: 12px;
+      padding: 20px; margin-bottom: 16px; box-shadow: 0 3px 12px #17203308;
     }
-
-    .topbar {
-      height: 64px;
-      padding: 0 max(22px, calc((100% - 1080px) / 2));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #ffffff12;
-    }
-
-    .brand {
-      color: var(--text);
-      font-weight: 850;
-      letter-spacing: 1.3px;
-      text-decoration: none;
-      font-size: 16px;
-    }
-
-    .brand span { color: var(--blue); }
-    .top-note { color: var(--muted); font-size: 13px; }
-
-    main {
-      width: min(1080px, calc(100% - 36px));
-      margin: 44px auto 56px;
-    }
-
-    .hero {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 20px;
-      margin-bottom: 24px;
-    }
-
-    .eyebrow {
-      margin: 0 0 7px;
-      color: var(--blue);
-      font-size: 11px;
-      letter-spacing: 2px;
-      font-weight: 700;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(28px, 5vw, 40px);
-      line-height: 1.2;
-    }
-
-    .subtitle { margin: 10px 0 0; color: var(--muted); }
-
-    button, .link-button {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      border: 1px solid #426da8;
-      border-radius: 10px;
-      padding: 10px 15px;
-      background: #172b49;
-      color: #e2edff;
-      font: inherit;
-      text-decoration: none;
+    h2 { font-size: 17px; margin: 0 0 16px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .item { min-width: 0; }
+    .label { display: block; color: #687386; font-size: 13px; margin-bottom: 5px; }
+    .value { overflow-wrap: anywhere; font-weight: 600; }
+    .status { color: #687386; font-weight: 400; }
+    .good { color: #137a49; }
+    .warn { color: #a56300; }
+    .bad { color: #bd3030; }
+    button, .link {
+      display: inline-block; border: 0; border-radius: 8px; padding: 10px 14px;
+      background: #215fe5; color: white; font: inherit; text-decoration: none;
       cursor: pointer;
-      transition: background .15s ease, transform .15s ease;
     }
-
-    button:hover, .link-button:hover {
-      background: #203c63;
-      transform: translateY(-1px);
-    }
-
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: linear-gradient(145deg, var(--panel-light), var(--panel));
-      box-shadow: 0 16px 45px #00000018;
-    }
-
-    .ip-panel { padding: 24px; margin-bottom: 16px; }
-
-    .status-line {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      color: var(--green);
-      font-size: 13px;
-    }
-
-    .status-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 12px #48d7a080;
-    }
-
-    .small-label {
-      margin: 23px 0 3px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .ip-address {
-      min-height: 56px;
-      font-size: clamp(28px, 7vw, 46px);
-      font-weight: 750;
-      letter-spacing: .5px;
-      overflow-wrap: anywhere;
-    }
-
-    .ip-details {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 7px 26px;
-      margin-top: 10px;
-      color: #c7d3e6;
-      font-size: 13px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-    }
-
-    .result-card { padding: 20px; min-height: 184px; }
-
-    .card-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    h2 { margin: 0; font-size: 17px; }
-
-    .badge {
-      flex: 0 0 auto;
-      border-radius: 99px;
-      padding: 3px 9px;
-      font-size: 11px;
-      background: #ffffff12;
-      color: #d3ddef;
-    }
-
-    .badge.ok { background: #1c8e6228; color: #8ff0c2; }
-    .badge.warn { background: #9b6b2028; color: var(--yellow); }
-    .badge.external { background: #9b6b2028; color: var(--yellow); }
-
-    .description {
-      min-height: 42px;
-      margin: 12px 0 14px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .result {
-      font-size: 14px;
-      font-weight: 650;
-      overflow-wrap: anywhere;
-    }
-
-    .addresses {
-      margin: 8px 0 0;
-      padding-left: 18px;
-      color: #c7d3e6;
-      font: 12px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace;
-      overflow-wrap: anywhere;
-    }
-
-    .note {
-      margin: 20px 0;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    footer {
-      padding-top: 17px;
-      border-top: 1px solid #ffffff12;
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    @media (max-width: 650px) {
-      main { margin-top: 30px; }
-      .hero { align-items: flex-start; flex-direction: column; }
-      .grid { grid-template-columns: 1fr; }
-      .ip-panel { padding: 19px; }
-    }
+    button:disabled { opacity: .6; cursor: wait; }
+    .subtle { color: #687386; font-size: 13px; line-height: 1.6; }
+    ul { padding-left: 20px; margin-bottom: 0; }
+    li { overflow-wrap: anywhere; margin: 6px 0; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
-
 <body>
-  <header class="topbar">
-    <a class="brand" href="/">NET<span>CHECK</span></a>
-    <span class="top-note">网络检测中心</span>
+  <header>
+    <div class="wrap"><h1>网络诊断</h1></div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div>
-        <p class="eyebrow">NETWORK DIAGNOSTICS</p>
-        <h1>网络状态检测</h1>
-        <p class="subtitle">页面加载后自动检测公网 IP、WebRTC 和 IPv6。</p>
-      </div>
-      <button id="refreshButton" type="button">重新检测</button>
-    </section>
+  <main class="wrap">
+    <p class="intro">自动检查当前连接的公网网络信息。</p>
 
-    <section class="panel ip-panel">
-      <div class="status-line">
-        <span class="status-dot"></span>
-        <span id="mainStatus">正在检测网络…</span>
-      </div>
-
-      <p class="small-label">当前公网 IP</p>
-      <div id="ipAddress" class="ip-address">正在查询…</div>
-
-      <div class="ip-details">
-        <span id="location">地区：查询中</span>
-        <span id="provider">运营商 / ASN：查询中</span>
+    <section class="card" aria-labelledby="ip-title">
+      <h2 id="ip-title">公网 IP 与网络信息</h2>
+      <div class="grid">
+        <div class="item"><span class="label">公网 IP</span><div id="ip" class="value status">检测中…</div></div>
+        <div class="item"><span class="label">位置</span><div id="location" class="value status">检测中…</div></div>
+        <div class="item"><span class="label">ISP</span><div id="isp" class="value status">检测中…</div></div>
+        <div class="item"><span class="label">ASN</span><div id="asn" class="value status">检测中…</div></div>
       </div>
     </section>
 
-    <section class="grid">
-      <article class="panel result-card">
-        <div class="card-heading">
-          <h2>WebRTC 检测</h2>
-          <span id="webrtcBadge" class="badge">检测中</span>
-        </div>
-        <p class="description">
-          检查浏览器提供的 WebRTC 网络地址。浏览器可能会隐藏部分地址。
-        </p>
-        <div id="webrtcResult" class="result">正在检测…</div>
-        <ul id="webrtcAddresses" class="addresses"></ul>
-      </article>
-
-      <article class="panel result-card">
-        <div class="card-heading">
-          <h2>IPv6 连通性</h2>
-          <span id="ipv6Badge" class="badge">检测中</span>
-        </div>
-        <p class="description">尝试通过 IPv6 访问测试端点。</p>
-        <div id="ipv6Result" class="result">正在检测…</div>
-      </article>
-
-      <article class="panel result-card">
-        <div class="card-heading">
-          <h2>VPN / 代理判断</h2>
-          <span class="badge">暂未接入</span>
-        </div>
-        <p class="description">
-          判断 VPN 或代理需要专门的 IP 风险情报数据源。
-        </p>
-        <div class="result">当前版本不对 VPN 作判断</div>
-      </article>
-
-      <article class="panel result-card">
-        <div class="card-heading">
-          <h2>DNS 泄露检测</h2>
-          <span class="badge external">第三方检测</span>
-        </div>
-        <p class="description">
-          点击后前往 IPLeak.net 完成 DNS 检测。
-        </p>
-        <a class="link-button" href="https://ipleak.net/"
-           target="_blank" rel="noopener noreferrer">
-          打开 DNS 检测
-        </a>
-      </article>
+    <section class="card" aria-labelledby="ipv6-title">
+      <h2 id="ipv6-title">IPv6 连通性</h2>
+      <div id="ipv6" class="value status">检测中…</div>
+      <p class="subtle">此项通过请求 IPv6 测试服务检测。若服务不可用，结果可能显示为检测失败。</p>
     </section>
 
-    <p class="note">
-      IP 地区信息由外部服务查询，该服务会收到本次查询的 IP。
-      检测结果仅供参考；“未检测到”不代表所有网络情况下绝对安全。
-      WebRTC 测试会尝试连接 STUN 服务。
-    </p>
+    <section class="card" aria-labelledby="rtc-title">
+      <h2 id="rtc-title">WebRTC 检查</h2>
+      <div id="rtc-status" class="value status">检测中…</div>
+      <ul id="rtc-list" class="subtle"></ul>
+      <p class="subtle">浏览器可能会隐藏本地地址或限制 WebRTC；未显示地址不等于绝对不存在泄漏。</p>
+    </section>
 
-    <footer>NETCHECK · 检测结果仅供参考</footer>
+    <section class="card">
+      <h2>DNS 泄漏检查</h2>
+      <p class="subtle">DNS 检查由第三方页面执行，本网站不会自行搭建权威 DNS 检测服务。</p>
+      <a class="link" href="https://www.ipleak.net/" target="_blank" rel="noopener noreferrer">前往 IPLeak.net 检查 DNS</a>
+    </section>
+
+    <button id="refresh" type="button">重新检测</button>
+    <p id="page-error" class="subtle" role="status"></p>
   </main>
 
   <script>
-    const el = (id) => document.getElementById(id);
+    const $ = (id) => document.getElementById(id);
 
-    async function checkIp() {
-      el("mainStatus").textContent = "正在读取公网 IP…";
-      el("ipAddress").textContent = "正在查询…";
+    function setValue(id, value, className = "") {
+      const el = $(id);
+      el.textContent = value;
+      el.className = "value " + className;
+    }
+
+    async function checkNetworkInfo() {
+      $("page-error").textContent = "";
+      $("refresh").disabled = true;
+
+      for (const id of ["ip", "location", "isp", "asn"]) {
+        setValue(id, "检测中…", "status");
+      }
 
       try {
-        const response = await fetch("/api/check", { cache: "no-store" });
-        if (!response.ok) throw new Error("IP 查询失败");
-
+        const response = await fetch("/api/check", {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          cache: "no-store"
+        });
         const data = await response.json();
-        el("ipAddress").textContent = data.ip || "未能读取";
-        el("location").textContent =
-          "地区：" + [data.city, data.region, data.country]
-            .filter(Boolean).join(", ");
-        el("provider").textContent =
-          "运营商 / ASN：" + [data.org, data.asn]
-            .filter(Boolean).join(" / ");
-        el("mainStatus").textContent = "公网 IP 已读取";
-      } catch {
-        el("ipAddress").textContent = "查询失败，请稍后重试";
-        el("location").textContent = "地区：暂不可用";
-        el("provider").textContent = "运营商 / ASN：暂不可用";
-        el("mainStatus").textContent = "IP 信息源暂时不可用";
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "无法获取网络信息");
+        }
+
+        setValue("ip", data.ip || "未提供");
+        setValue("location", data.location || "未提供");
+        setValue("isp", data.isp || "未提供");
+        setValue("asn", data.asn || "未提供");
+      } catch (error) {
+        for (const id of ["ip", "location", "isp", "asn"]) {
+          setValue(id, "检测失败", "bad");
+        }
+        $("page-error").textContent = error.message || "网络信息请求失败，请稍后重试。";
+      } finally {
+        $("refresh").disabled = false;
       }
     }
 
-    async function checkIpv6() {
-      el("ipv6Badge").textContent = "检测中";
-      el("ipv6Badge").className = "badge";
+    async function checkIPv6() {
+      setValue("ipv6", "检测中…", "status");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 7000);
 
       try {
-        const response = await fetch(
-          "https://api6.ipify.org?format=json",
-          { cache: "no-store", signal: AbortSignal.timeout(7000) }
-        );
-
-        if (!response.ok) throw new Error("IPv6 测试失败");
-
+        const response = await fetch("https://api6.ipify.org?format=json", {
+          cache: "no-store",
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error("IPv6 测试服务返回错误");
         const data = await response.json();
-        el("ipv6Result").textContent = "IPv6 可用：" + data.ip;
-        el("ipv6Badge").textContent = "可用";
-        el("ipv6Badge").className = "badge ok";
+
+        if (!data.ip) throw new Error("未获得 IPv6 地址");
+        setValue("ipv6", "已检测到 IPv6：" + data.ip, "good");
       } catch {
-        el("ipv6Result").textContent =
-          "未检测到 IPv6，或 IPv6 测试端点不可达";
-        el("ipv6Badge").textContent = "未检测到";
-        el("ipv6Badge").className = "badge warn";
+        setValue("ipv6", "未检测到 IPv6 连通性", "warn");
+      } finally {
+        clearTimeout(timer);
       }
     }
 
-    async function checkWebrtc() {
-      el("webrtcBadge").textContent = "检测中";
-      el("webrtcBadge").className = "badge";
-      el("webrtcAddresses").replaceChildren();
+    function checkWebRTC() {
+      const status = $("rtc-status");
+      const list = $("rtc-list");
+      list.replaceChildren();
 
       if (!window.RTCPeerConnection) {
-        el("webrtcResult").textContent = "当前浏览器不支持 WebRTC";
-        el("webrtcBadge").textContent = "不支持";
-        el("webrtcBadge").className = "badge warn";
+        status.textContent = "此浏览器不支持 WebRTC。";
+        status.className = "value warn";
         return;
       }
 
-      let connection;
-      const addresses = new Set();
+      status.textContent = "正在收集候选地址…";
+      status.className = "value status";
+
+      let finished = false;
+      const candidates = new Set();
+      let pc;
+
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+
+        if (pc) pc.close();
+
+        if (candidates.size) {
+          status.textContent = "发现 WebRTC 候选地址（不一定代表公网 IP 泄漏）：";
+          status.className = "value warn";
+          for (const candidate of candidates) {
+            const li = document.createElement("li");
+            li.textContent = candidate;
+            list.appendChild(li);
+          }
+        } else {
+          status.textContent = "未收集到候选地址；浏览器可能隐藏或限制了地址。";
+          status.className = "value good";
+        }
+      };
 
       try {
-        connection = new RTCPeerConnection({
-          iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-        });
+        // 不配置 STUN 服务器：仅检查浏览器本地生成的 ICE 候选项。
+        pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("diagnostic");
 
-        connection.createDataChannel("netcheck");
-        await connection.setLocalDescription(await connection.createOffer());
-
-        await new Promise((resolve) => {
-          const timeout = setTimeout(resolve, 6000);
-
-          connection.onicecandidate = (event) => {
-            if (!event.candidate) {
-              clearTimeout(timeout);
-              resolve();
-              return;
-            }
-
-            const parts = event.candidate.candidate.split(" ");
-            const address = parts[4];
-
-            if (address && !address.endsWith(".local")) {
-              addresses.add(address);
-            }
-          };
-        });
-
-        const list = [...addresses];
-
-        if (list.length) {
-          el("webrtcResult").textContent =
-            "浏览器提供了以下候选网络地址：";
-          for (const address of list) {
-            const li = document.createElement("li");
-            li.textContent = address;
-            el("webrtcAddresses").appendChild(li);
+        pc.onicecandidate = (event) => {
+          if (!event.candidate) {
+            finish();
+            return;
           }
-          el("webrtcBadge").textContent = "已检测";
-          el("webrtcBadge").className = "badge ok";
-        } else {
-          el("webrtcResult").textContent =
-            "没有读取到可显示的候选地址；这不等于确认安全。";
-          el("webrtcBadge").textContent = "信息有限";
-          el("webrtcBadge").className = "badge warn";
-        }
+
+          const text = event.candidate.candidate || "";
+          const match = text.match(/(?:\d{1,3}\.){3}\d{1,3}|[0-9a-f:]{3,}/i);
+          if (match) candidates.add(match[0]);
+        };
+
+        pc.onicegatheringstatechange = () => {
+          if (pc.iceGatheringState === "complete") finish();
+        };
+
+        pc.createOffer()
+          .then((offer) => pc.setLocalDescription(offer))
+          .catch(finish);
+
+        setTimeout(finish, 5000);
       } catch {
-        el("webrtcResult").textContent =
-          "检测受浏览器或网络设置限制，未能完成。";
-        el("webrtcBadge").textContent = "受限";
-        el("webrtcBadge").className = "badge warn";
-      } finally {
-        if (connection) connection.close();
+        status.textContent = "无法启动 WebRTC 检查。";
+        status.className = "value warn";
       }
     }
 
-    async function runChecks() {
-      el("refreshButton").disabled = true;
-      await checkIp();
-      await Promise.all([checkIpv6(), checkWebrtc()]);
-      el("refreshButton").disabled = false;
+    function runChecks() {
+      checkNetworkInfo();
+      checkIPv6();
+      checkWebRTC();
     }
 
-    el("refreshButton").addEventListener("click", runChecks);
+    $("refresh").addEventListener("click", runChecks);
     runChecks();
   </script>
 </body>
