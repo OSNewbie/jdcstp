@@ -4,125 +4,78 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5f7fb">
-  <meta name="description" content="检测公网 IP、网络位置、IPv6 连通性和 WebRTC 候选地址。">
   <title>网络诊断</title>
-
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f5f7fb;
-      --card: #fff;
-      --text: #182230;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Microsoft YaHei", sans-serif;
+      color: #182230;
+      background: #f5f7fb;
+      --blue: #2162dc;
       --muted: #687588;
       --border: #e5eaf1;
-      --blue: #2162dc;
-      --green: #14804a;
-      --orange: #a76000;
-      --red: #bd3434;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-        "Microsoft YaHei", "Noto Sans SC", sans-serif;
     }
 
     * { box-sizing: border-box; }
+    body { margin: 0; }
+    .container { width: min(920px, calc(100% - 32px)); margin: auto; }
 
-    body {
-      margin: 0;
-      color: var(--text);
-      background: var(--bg);
-    }
-
-    .topbar {
-      background: var(--card);
+    header {
+      background: #fff;
       border-bottom: 1px solid var(--border);
     }
 
-    .container {
-      width: min(940px, calc(100% - 32px));
-      margin: 0 auto;
-    }
-
-    .topbar-inner {
-      min-height: 66px;
+    .topbar {
+      min-height: 64px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
     }
 
-    .brand {
-      font-size: 19px;
-      font-weight: 700;
-      letter-spacing: .2px;
-    }
+    .brand { font-size: 19px; font-weight: 700; }
+    .brand span { color: var(--blue); margin-right: 8px; }
 
-    .brand-mark {
-      color: var(--blue);
-      margin-right: 8px;
-    }
-
-    main { padding: 32px 0 48px; }
-
-    .hero { margin-bottom: 22px; }
-
-    .hero h1 {
-      font-size: clamp(23px, 4vw, 30px);
-      margin: 0 0 8px;
-    }
-
-    .hero p {
-      color: var(--muted);
-      margin: 0;
-      line-height: 1.65;
-    }
+    main { padding: 30px 0 48px; }
+    .hero { margin-bottom: 20px; }
+    .hero h1 { font-size: 28px; margin: 0 0 8px; }
+    .hero p { color: var(--muted); line-height: 1.6; margin: 0; }
 
     .card {
-      background: var(--card);
+      background: #fff;
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 22px;
-      margin-bottom: 16px;
+      padding: 21px;
+      margin-bottom: 15px;
       box-shadow: 0 4px 16px rgb(25 45 75 / 4%);
     }
 
-    .card-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 17px;
-    }
+    .card h2 { font-size: 17px; margin: 0 0 17px; }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px 24px;
+      gap: 18px 22px;
     }
 
-    .field { min-width: 0; }
-
     .label {
-      display: block;
       color: var(--muted);
+      display: block;
       font-size: 13px;
       margin-bottom: 6px;
     }
 
     .value {
-      min-height: 24px;
+      min-height: 23px;
       font-size: 15px;
       font-weight: 600;
       overflow-wrap: anywhere;
     }
 
     .muted { color: var(--muted); font-weight: 400; }
-    .good { color: var(--green); }
-    .warning { color: var(--orange); }
-    .error { color: var(--red); }
+    .good { color: #14804a; }
+    .warn { color: #a76000; }
+    .error { color: #bd3434; }
 
     .detail {
       color: var(--muted);
@@ -131,105 +84,95 @@
       margin: 12px 0 0;
     }
 
-    .action {
+    .button {
       display: inline-flex;
-      justify-content: center;
       align-items: center;
-      min-height: 40px;
-      padding: 9px 15px;
+      justify-content: center;
+      min-height: 39px;
       border: 0;
       border-radius: 8px;
+      padding: 8px 14px;
       color: #fff;
       background: var(--blue);
       font: inherit;
-      font-size: 14px;
       text-decoration: none;
       cursor: pointer;
     }
 
-    .action:hover { background: #174fb9; }
-    .action:disabled { opacity: .6; cursor: wait; }
+    .button:hover { background: #174fb9; }
+    .button:disabled { opacity: .6; cursor: wait; }
 
-    .action.secondary {
-      min-height: 34px;
-      padding: 6px 11px;
+    .secondary {
       color: var(--blue);
       background: #edf3ff;
+      min-height: 34px;
+      padding: 6px 11px;
+      font-size: 14px;
+    }
+
+    .alert {
+      display: none;
+      background: #fff1f1;
+      border: 1px solid #f2cccc;
+      color: #a72c2c;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 15px;
+      font-size: 13px;
+      line-height: 1.6;
+      overflow-wrap: anywhere;
     }
 
     .candidate-list {
-      margin: 12px 0 0;
-      padding-left: 20px;
       color: var(--muted);
       font-size: 13px;
       overflow-wrap: anywhere;
     }
 
     .candidate-list li { margin: 6px 0; }
-
-    .error-box {
-      display: none;
-      margin: 0 0 16px;
-      padding: 12px 14px;
-      color: var(--red);
-      background: #fff1f1;
-      border: 1px solid #f2cccc;
-      border-radius: 8px;
-      font-size: 13px;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-    }
-
-    .footer {
-      color: var(--muted);
-      font-size: 12px;
-      text-align: center;
-      padding-top: 10px;
-    }
+    .footer { text-align: center; color: var(--muted); font-size: 12px; }
 
     @media (max-width: 600px) {
-      main { padding-top: 24px; }
-      .card { padding: 18px; }
-      .grid { grid-template-columns: 1fr; gap: 15px; }
-      .topbar-inner { min-height: 58px; }
+      main { padding-top: 22px; }
+      .grid { grid-template-columns: 1fr; gap: 14px; }
+      .card { padding: 17px; }
+      .hero h1 { font-size: 24px; }
     }
   </style>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="container topbar-inner">
-      <div class="brand"><span class="brand-mark">●</span>网络诊断</div>
-      <button id="refresh" class="action secondary" type="button">重新检测</button>
+  <header>
+    <div class="container topbar">
+      <div class="brand"><span>●</span>网络诊断</div>
+      <button id="refresh" class="button secondary" type="button">重新检测</button>
     </div>
   </header>
 
   <main class="container">
     <section class="hero">
       <h1>网络连接检查</h1>
-      <p>页面加载后自动检测当前网络信息。位置和运营商数据为 IP 数据库估算值。</p>
+      <p>自动检测公网 IP、网络位置、IPv6 连通性及 WebRTC 候选地址。</p>
     </section>
 
-    <div id="error-box" class="error-box" role="alert"></div>
+    <div id="alert" class="alert" role="alert"></div>
 
     <section class="card">
-      <div class="card-head">
-        <h2>公网 IP 与网络信息</h2>
-      </div>
+      <h2>公网 IP 与网络信息</h2>
       <div class="grid">
-        <div class="field">
+        <div>
           <span class="label">公网 IP</span>
           <div id="ip" class="value muted">检测中…</div>
         </div>
-        <div class="field">
+        <div>
           <span class="label">位置</span>
           <div id="location" class="value muted">检测中…</div>
         </div>
-        <div class="field">
+        <div>
           <span class="label">ISP</span>
           <div id="isp" class="value muted">检测中…</div>
         </div>
-        <div class="field">
+        <div>
           <span class="label">ASN</span>
           <div id="asn" class="value muted">检测中…</div>
         </div>
@@ -237,56 +180,43 @@
     </section>
 
     <section class="card">
-      <div class="card-head"><h2>IPv6 连通性</h2></div>
+      <h2>IPv6 连通性</h2>
       <div id="ipv6" class="value muted">检测中…</div>
-      <p class="detail">
-        通过 IPv6 测试服务检查连接。若显示未连接，通常表示当前网络没有可用的 IPv6 路由；
-        测试服务暂时不可用时也可能检测失败。
-      </p>
+      <p class="detail">未检测到 IPv6 可能表示当前网络不支持 IPv6，也可能是测试服务暂时不可用。</p>
     </section>
 
     <section class="card">
-      <div class="card-head"><h2>WebRTC 检查</h2></div>
-      <div id="rtc-status" class="value muted">检测中…</div>
+      <h2>WebRTC 检查</h2>
+      <div id="rtc" class="value muted">检测中…</div>
       <ul id="rtc-list" class="candidate-list"></ul>
-      <p class="detail">
-        WebRTC 候选地址由浏览器和网络共同决定。浏览器可能隐藏本地地址；
-        未显示地址不能单独证明不存在泄漏。
-      </p>
+      <p class="detail">浏览器可能隐藏本地地址。未显示候选地址不能单独证明不存在泄漏。</p>
     </section>
 
     <section class="card">
-      <div class="card-head"><h2>DNS 泄漏检查</h2></div>
-      <p class="detail" style="margin-top:0">
-        DNS 检测需要专门的权威 DNS 服务，本页面使用第三方检测页面。
-      </p>
-      <a
-        class="action"
-        href="https://www.ipleak.net/"
-        target="_blank"
-        rel="noopener noreferrer"
-      >前往 IPLeak.net 检查 DNS</a>
+      <h2>DNS 泄漏检查</h2>
+      <p class="detail">DNS 检查需要专门的检测服务。当前版本提供第三方检测入口。</p>
+      <a class="button" href="https://www.ipleak.net/" target="_blank" rel="noopener noreferrer">
+        前往 IPLeak.net
+      </a>
     </section>
 
-    <div class="footer">检测结果仅供网络排查参考</div>
+    <p class="footer">检测结果仅供网络排查参考</p>
   </main>
 
   <script>
-    const byId = (id) => document.getElementById(id);
+    const el = (id) => document.getElementById(id);
 
-    function showValue(id, text, state = "") {
-      const element = byId(id);
-      element.textContent = text;
-      element.className = `value ${state}`.trim();
+    function setValue(id, text, state = "") {
+      el(id).textContent = text;
+      el(id).className = `value ${state}`.trim();
     }
 
-    async function checkPublicNetwork() {
-      const errorBox = byId("error-box");
-      errorBox.style.display = "none";
-      errorBox.textContent = "";
+    async function checkPublicIP() {
+      el("alert").style.display = "none";
+      el("alert").textContent = "";
 
       ["ip", "location", "isp", "asn"].forEach((id) => {
-        showValue(id, "检测中…", "muted");
+        setValue(id, "检测中…", "muted");
       });
 
       try {
@@ -299,151 +229,19 @@
         const data = await response.json().catch(() => null);
 
         if (!response.ok || !data?.success) {
-          const message = data?.error || `接口请求失败（HTTP ${response.status}）`;
-          throw new Error(message);
+          throw new Error(data?.error || `接口请求失败（HTTP ${response.status}）`);
         }
 
-        showValue("ip", data.ip || "暂无数据");
-        showValue("location", data.location || "暂无位置数据");
-        showValue("isp", data.isp || "暂无 ISP 数据");
-        showValue("asn", data.asn || "暂无 ASN 数据");
-      } catch (error) {
-        ["ip", "location", "isp", "asn"].forEach((id) => {
-          showValue(id, "检测失败", "error");
-        });
+        setValue("ip", data.ip || "暂无数据");
+        setValue("location", data.location || "暂无位置数据");
+        setValue("isp", data.isp || "暂无 ISP 数据");
+        setValue("asn", data.asn行。下面是完整替换版。**404 的关键是部署位置**：`functions/api/check.js` 必须放在 Cloudflare Pages 项目根目录的 `functions/` 里，不能放进 `dist/`、`public/` 等静态输出目录。该文件会映射到 `/api/check`。cite1,2
 
-        errorBox.textContent =
-          `公网信息获取失败：${error.message || "未知错误"}。` +
-          "请检查 Cloudflare Pages 的 /api/check 请求状态和返回内容。";
-        errorBox.style.display = "block";
-      }
-    }
+## 仓库目录
 
-    async function checkIPv6() {
-      showValue("ipv6", "检测中…", "muted");
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-
-      try {
-        const response = await fetch("https://api6.ipify.org?format=json", {
-          method: "GET",
-          cache: "no-store",
-          signal: controller.signal
-        });
-
-        if (!response.ok) {
-          throw new Error(`IPv6 测试服务返回 HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (!data.ip) throw new Error("响应中没有 IP 地址");
-
-        showValue("ipv6", `已连接：${data.ip}`, "good");
-      } catch (error) {
-        if (error.name === "AbortError") {
-          showValue("ipv6", "检测超时，未确认 IPv6 连通性", "warning");
-        } else {
-          showValue("ipv6", "未检测到 IPv6 连通性", "warning");
-        }
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
-    function checkWebRTC() {
-      const status = byId("rtc-status");
-      const list = byId("rtc-list");
-      list.replaceChildren();
-
-      if (!window.RTCPeerConnection) {
-        showValue("rtc-status", "当前浏览器不支持 WebRTC", "warning");
-        return;
-      }
-
-      showValue("rtc-status", "正在收集候选地址…", "muted");
-
-      let peer;
-      let completed = false;
-      const addresses = new Set();
-
-      const finish = () => {
-        if (completed) return;
-        completed = true;
-
-        if (peer) peer.close();
-
-        if (addresses.size > 0) {
-          showValue("rtc-status", "收集到以下候选地址", "warning");
-
-          for (const address of addresses) {
-            const item = document.createElement("li");
-            item.textContent = address;
-            list.appendChild(item);
-          }
-        } else {
-          showValue(
-            "rtc-status",
-            "没有收集到候选地址；浏览器或网络可能限制了 WebRTC",
-            "warning"
-          );
-        }
-      };
-
-      try {
-        peer = new RTCPeerConnection({
-          iceServers: [
-            { urls: "stun:stun.l.google.com:19302" }
-          ]
-        });
-
-        peer.createDataChannel("network-diagnostic");
-
-        peer.onicecandidate = (event) => {
-          if (!event.candidate) {
-            finish();
-            return;
-          }
-
-          const candidate = event.candidate;
-          const address =
-            candidate.address ||
-            candidate.candidate.match(
-              /(?:\\d{1,3}\\.){3}\\d{1,3}|(?:[0-9a-f]{0,4}:){2,}[0-9a-f:]+/i
-            )?.[0];
-
-          if (address) addresses.add(address);
-        };
-
-        peer.onicegatheringstatechange = () => {
-          if (peer.iceGatheringState === "complete") finish();
-        };
-
-        peer.createOffer()
-          .then((offer) => peer.setLocalDescription(offer))
-          .catch(finish);
-
-        setTimeout(finish, 8000);
-      } catch {
-        showValue("rtc-status", "无法启动 WebRTC 检查", "warning");
-      }
-    }
-
-    function runAllChecks() {
-      byId("refresh").disabled = true;
-
-      Promise.allSettled([
-        checkPublicNetwork(),
-        checkIPv6()
-      ]).finally(() => {
-        byId("refresh").disabled = false;
-      });
-
-      checkWebRTC();
-    }
-
-    byId("refresh").addEventListener("click", runAllChecks);
-    runAllChecks();
-  </script>
-</body>
-</html>
+```text
+仓库根目录/
+├── index.html
+└── functions/
+    └── api/
+        └── check.js
