@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- VERSION: 2024-QUALITY-PANEL -->
+<!-- VERSION: 2024-AUTO-QUALITY -->
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>节点拓扑分析 · BGP & IP质量</title>
+<title>节点拓扑分析 · 自动化检测</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
@@ -13,7 +13,7 @@
   <h1>节点拓扑分析</h1>
 
   <div class="input-row">
-    <input id="subUrl" placeholder="订阅链接（可选，需支持 CORS）">
+    <input id="subUrl" placeholder="订阅链接（需支持 CORS）">
     <button id="loadUrl">拉取订阅</button>
   </div>
   <div class="input-row">
@@ -54,11 +54,8 @@
   <h2>拓扑图 <span class="hint">（点击 IP 卡片查看 BGP 路由）</span></h2>
   <div id="topoChart" class="topo"></div>
 
-  <h2>IP 质量评估 <span class="hint">（独立检测节点 IP 的原生性、机房类型与风险）</span></h2>
-  <div class="input-row">
-    <button id="checkQualityBtn">开始检测节点质量</button>
-    <span id="qualityStatus" class="quality-status"></span>
-  </div>
+  <h2>节点质量自动检测 <span class="hint">（解析后自动执行，按顺序检测）</span></h2>
+  <div id="qualityStatus" class="quality-status" style="margin-bottom:12px; font-weight:600; color:#3b82f6;"></div>
   <div id="qualityTableWrap" class="quality-table-wrap"></div>
 
   <h2>IP / ASN 查询</h2>
