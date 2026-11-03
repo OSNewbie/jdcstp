@@ -193,6 +193,10 @@
   .adp-bar-fill.warn { background: linear-gradient(90deg, #ffd166, #ff9f43); }
   .adp-bar-fill.err  { background: linear-gradient(90deg, #ff9f43, #ff6b6b); }
   .adp-quota-note { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+  .adp-status-line { font-size: 11px; margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.04); line-height: 1.5; }
+  .adp-status-line.ok { color: #6bcf7f; }
+  .adp-status-line.err { color: #ff6b6b; }
+  .adp-status-line.warn { color: #ffd166; }
   .adp-actions { display: flex; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
   .adp-actions .btn { flex: 1; }
 
@@ -287,6 +291,7 @@
   <div class="adp-sub" id="adpSub">本月累计调用统计，按自然月自动清零。</div>
   <div id="adpSources"></div>
   <div class="adp-actions">
+    <button class="btn btn-ghost" id="testWaBtn" onclick="testWeatherApiFromPanel()">测试 WeatherAPI</button>
     <button class="btn btn-ghost" onclick="resetApiStats()">重置统计</button>
     <button class="btn btn-primary" onclick="toggleApiDetail()">关闭</button>
   </div>
@@ -312,10 +317,10 @@
     <label>API Host（可选）</label>
     <input type="text" id="apiHostInput" placeholder="默认 devapi.qweather.com" autocomplete="off" spellcheck="false">
     <label>WeatherAPI Key（可选，用于三源共识计算）</label>
-    <input type="text" id="weatherApiKeyInput" placeholder="前往 weatherapi.com 注册获取，免费 10 万次/月" autocomplete="off" spellcheck="false">
+    <input type="text" id="weatherApiKeyInput" placeholder="前往 weatherapi.com 注册获取，免费 100 万次/月" autocomplete="off" spellcheck="false">
     <div class="settings-actions">
       <button class="btn btn-ghost" onclick="closeSettings()">取消</button>
-      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存并测试</button>
     </div>
   </div>
 </div>
@@ -331,6 +336,14 @@ const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:
 let currentTab = 'home';
 let loadSeq = 0;
 let warningViewMode = 'local';
+
+/* WeatherAPI 最近一次请求状态 */
+let lastWaStatus = { status: '未调用', time: '', ok: null };
+
+function nowStr() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+}
 
 /* ================================================================
    API 调用统计
@@ -393,6 +406,37 @@ async function fetchJson(url, source = 'qweather') {
 }
 
 /* ================================================================
+   独立测试 WeatherAPI
+   ================================================================ */
+async function testWeatherAPI(key) {
+  if (!key) return { ok: false, error: '未配置 Key' };
+  try {
+    const url = `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(key)}&q=London`;
+    const res = await fetch(url);
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const data = await res.json();
+    if (data.error) return { ok: false, error: data.error.message || '未知错误' };
+    return { ok: true, temp: data.current?.temp_c, city: data.location?.name };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+async function testWeatherApiFromPanel() {
+  const key = state.waKey || document.getElementById('weatherApiKeyInput')?.value.trim();
+  if (!key) { alert('请先在设置中填写并保存 WeatherAPI Key'); return; }
+  const btn = document.getElementById('testWaBtn');
+  if (btn) { btn.textContent = '测试中…'; btn.disabled = true; }
+  const r = await testWeatherAPI(key);
+  if (btn) { btn.textContent = '测试 WeatherAPI'; btn.disabled = false; }
+  if (r.ok) {
+    alert(`✅ WeatherAPI 测试成功\n\n返回城市：${r.city}\n当前温度：${r.temp}°C\n\n如果后台没记录：\n1. 确认你在 weatherapi.com 后台看，不是和风控制台\n2. WeatherAPI 用量统计有延迟，通常几小时后才更新\n3. 免费层不提供逐条请求日志，只看月度总数`);
+  } else {
+    alert(`❌ WeatherAPI 测试失败\n\n原因：${r.error}\n\n请检查：\n1. Key 是否复制完整（无多余空格）\n2. 是否已完成邮箱验证\n3. 是否已在 weatherapi.com 后台激活账号`);
+  }
+}
+
+/* ================================================================
    API 状态 UI
    ================================================================ */
 function computeTotals(sources) {
@@ -425,12 +469,18 @@ function updateApiStatusBar() {
 
   const pct = Math.min(100, (qwUsed / QWEATHER_MONTHLY_QUOTA) * 100);
   const totals = computeTotals(apiStats.sources);
-  const health = getHealthClass(totals.ok, totals.fail);
+  let health = getHealthClass(totals.ok, totals.fail);
+
+  // 配了 WA Key 但从来没有成功/失败的记录，且已经加载过天气 → 警告
+  if (state.waKey && waUsed === 0 && qwUsed > 0) {
+    health = 'warn';
+  }
 
   document.getElementById('asDot').className = 'as-dot' + (health ? ' ' + health : '');
 
   const parts = [`和风 ${qwUsed}`];
-  if (state.waKey || waUsed > 0) parts.push(`WA ${waUsed}`);
+  if (state.waKey) parts.push(waUsed > 0 ? `WA ${waUsed}` : 'WA 未生效');
+  else if (waUsed > 0) parts.push(`WA ${waUsed}`);
   if (omUsed + nmcUsed > 0) parts.push(`其他 ${omUsed + nmcUsed}`);
 
   document.getElementById('asText').textContent = parts.join(' · ');
@@ -476,6 +526,19 @@ function renderApiDetail() {
     else pct = total > 0 ? Math.min(100, (s.ok / total) * 100) : 0;
     const barClass = 'adp-bar-fill' + (health ? ' ' + health : '');
 
+    let statusLine = '';
+    if (def.key === 'weatherapi') {
+      if (!state.waKey) {
+        statusLine = `<div class="adp-status-line warn">未配置 WeatherAPI Key。在设置中填入后点击“保存并测试”。</div>`;
+      } else if (lastWaStatus.ok === true) {
+        statusLine = `<div class="adp-status-line ok">最近一次请求：成功（${lastWaStatus.time}）</div>`;
+      } else if (lastWaStatus.ok === false) {
+        statusLine = `<div class="adp-status-line err">最近一次请求：失败 · ${lastWaStatus.status}（${lastWaStatus.time}）</div>`;
+      } else {
+        statusLine = `<div class="adp-status-line warn">已配置 Key，但尚未成功发起请求。检查城市是否有经纬度。</div>`;
+      }
+    }
+
     return `<div class="adp-source">
       <div class="adp-row">
         <span class="adp-name">${def.name}</span>
@@ -484,12 +547,13 @@ function renderApiDetail() {
       <div class="adp-meta">成功 ${s.ok} · 失败 ${s.fail} · ${def.quotaLabel}</div>
       <div class="adp-bar"><div class="${barClass}" style="width:${pct.toFixed(2)}%"></div></div>
       ${def.quota ? `<div class="adp-quota-note">已用 ${total} / ${def.quota}（${pct.toFixed(2)}%）</div>` : ''}
+      ${statusLine}
     </div>`;
   }).join('');
 
   const sub = document.getElementById('adpSub');
   if (sub) {
-    sub.textContent = `统计周期：${apiStats.month}（按自然月自动清零）。数据保存在本地浏览器，换设备不共享。`;
+    sub.textContent = `统计周期：${apiStats.month}（按自然月自动清零）。本表数字为网页本地记录，与各服务商后台独立。`;
   }
 }
 
@@ -535,16 +599,33 @@ function loadSettings() {
   state.activeIndex = Math.min(Math.max(idx, 0), Math.max(state.cities.length - 1, 0));
 }
 function saveCities() { localStorage.setItem(KEY_CITIES, JSON.stringify(state.cities)); localStorage.setItem(KEY_ACTIVE, String(state.activeIndex)); }
-function saveSettings() {
+
+async function saveSettings() {
   const key = document.getElementById('apiKeyInput').value.trim();
   const host = document.getElementById('apiHostInput').value.trim();
   const wa = document.getElementById('weatherApiKeyInput').value.trim();
-  if (!key) { alert('请填写 API Key'); return; }
-  localStorage.setItem(KEY_API, key); localStorage.setItem(KEY_HOST, host); localStorage.setItem(KEY_WA, wa);
-  state.apiKey = key; state.apiHost = host; state.waKey = wa; closeSettings();
+  if (!key) { alert('请填写和风天气 API Key'); return; }
+
+  localStorage.setItem(KEY_API, key);
+  localStorage.setItem(KEY_HOST, host);
+  localStorage.setItem(KEY_WA, wa);
+  state.apiKey = key; state.apiHost = host; state.waKey = wa;
+
+  // 如果填了 WeatherAPI，立即测试
+  if (wa) {
+    const r = await testWeatherAPI(wa);
+    if (r.ok) {
+      alert(`✅ WeatherAPI 已保存，测试成功\n返回温度：${r.temp}°C\n\n如果 weatherapi.com 后台没显示：\n· 统计通常有几小时延迟\n· 免费层只显示月度总数，无逐条日志\n· 确认看的是 weatherapi.com，不是和风控制台`);
+    } else {
+      alert(`⚠️ WeatherAPI Key 已保存，但测试失败\n原因：${r.error}\n\n请检查 Key 是否完整、账号是否已邮箱验证。`);
+    }
+  }
+
+  closeSettings();
   updateApiStatusBar();
   state.cities.length ? loadWeather() : initLocation();
 }
+
 function openSettings() {
   document.getElementById('apiKeyInput').value = state.apiKey;
   document.getElementById('apiHostInput').value = state.apiHost;
@@ -701,16 +782,36 @@ async function fetchOpenMeteo(city) {
     return t != null ? parseFloat(t) : null;
   } catch { return null; }
 }
+
+/* 详细版 fetchWeatherAPI */
 async function fetchWeatherAPI(city) {
-  if (!state.waKey || !city.lat || !city.lon) return null;
+  if (!state.waKey) {
+    lastWaStatus = { status: '未配置 Key', time: nowStr(), ok: false };
+    return null;
+  }
+  if (!city.lat || !city.lon) {
+    lastWaStatus = { status: '城市缺少经纬度', time: nowStr(), ok: false };
+    return null;
+  }
   try {
-    const url = `https://api.weatherapi.com/v1/current.json?key=${state.waKey}&q=${city.lat},${city.lon}`;
+    const url = `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(state.waKey)}&q=${city.lat},${city.lon}`;
     const res = await trackedFetch(url, 'weatherapi');
-    if (!res.ok) return null;
+    if (!res.ok) {
+      lastWaStatus = { status: `HTTP ${res.status}`, time: nowStr(), ok: false };
+      return null;
+    }
     const data = await res.json();
+    if (data.error) {
+      lastWaStatus = { status: `错误：${data.error.message || '未知'}`, time: nowStr(), ok: false };
+      return null;
+    }
+    lastWaStatus = { status: '成功', time: nowStr(), ok: true };
     const t = data.current?.temp_c;
     return t != null ? parseFloat(t) : null;
-  } catch { return null; }
+  } catch (e) {
+    lastWaStatus = { status: `网络错误：${e.message}`, time: nowStr(), ok: false };
+    return null;
+  }
 }
 
 function calcConsensus(temps) {
@@ -751,11 +852,37 @@ async function fetchHistoricalMAE(city, days = 7) {
 }
 
 /* ================================================================
+   城市经纬度补全（关键修复）
+   ================================================================ */
+async function ensureCityCoords(city) {
+  if (!city) return city;
+  if (city.lon && city.lat && !isNaN(city.lon) && !isNaN(city.lat)) return city;
+  if (!city.id || !state.apiKey) return city;
+  try {
+    const { geo } = getHosts();
+    const res = await fetchJson(`${geo}/geo/v2/city/lookup?location=${city.id}&number=1&lang=zh&key=${state.apiKey}`);
+    if (res.code === '200' && res.location?.length) {
+      const l = res.location[0];
+      city.lon = parseFloat(l.lon);
+      city.lat = parseFloat(l.lat);
+      city.adcode = city.adcode || l.adcode || '';
+      state.cities[state.activeIndex] = city;
+      saveCities();
+    }
+  } catch {}
+  return city;
+}
+
+/* ================================================================
    天气加载
    ================================================================ */
 async function loadWeather() {
-  const city = getActiveCity();
+  let city = getActiveCity();
   if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
+
+  // 关键：补齐经纬度
+  city = await ensureCityCoords(city);
+
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
@@ -1017,7 +1144,7 @@ function buildAccuracyCard(d) {
   const srcRows = [
     { name: '和风天气', temp: src.qweather, tag: '主数据源' },
     { name: 'Open-Meteo', temp: src.openMeteo, tag: m ? `历史±${m.mae}°C` : 'ECMWF/GFS' },
-    { name: 'WeatherAPI', temp: src.weatherApi, tag: state.waKey ? '免费层' : '未配置' },
+    { name: 'WeatherAPI', temp: src.weatherApi, tag: state.waKey ? (src.weatherApi != null ? '成功' : '未返回') : '未配置' },
   ].filter(r => r.name === '和风天气' || r.temp != null || r.name === 'WeatherAPI');
 
   return `<div class="section-label">预报准确度</div>
