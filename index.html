@@ -54,6 +54,12 @@
   .view.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
+  /* ===== 预警切换控件 ===== */
+  .warning-switch { display: flex; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 3px; margin: 16px 0 14px; border: 1px solid rgba(255,255,255,0.10); }
+  .ws-btn { flex: 1; padding: 9px 0; text-align: center; font-size: 13px; font-weight: 500; border-radius: 10px; cursor: pointer; color: var(--text-secondary); transition: background 0.2s, color 0.2s; user-select: none; }
+  .ws-btn.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
+  .ws-btn:active { transform: scale(0.97); }
+
   .warning-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; margin-bottom: 12px; border-radius: 14px; background: rgba(255,160,80,0.18); border: 1px solid rgba(255,160,80,0.35); font-size: 13px; cursor: pointer; flex-wrap: wrap; }
   .warning-banner .w-icon { font-size: 18px; }
   .warning-banner .w-title { flex: 1; font-weight: 600; min-width: 0; }
@@ -61,6 +67,7 @@
   .warning-detail { display: none; width: 100%; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,160,80,0.25); font-size: 12px; line-height: 1.7; color: rgba(255,255,255,0.85); }
   .warning-detail.show { display: block; }
   .warning-list-item { margin-bottom: 12px; }
+  .w-region { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
   .hero { text-align: center; padding: 24px 0 20px; }
   .hero .main-weather-icon { font-size: 64px; line-height: 1; margin-bottom: 6px; display: inline-block; animation: iconBreathe 4s ease-in-out infinite; }
@@ -247,6 +254,7 @@ const KEY_CITIES='qweather_cities', KEY_ACTIVE='qweather_active_index';
 const state = { apiKey: '', apiHost: '', cities: [], activeIndex: 0, data: null };
 let currentTab = 'home';
 let loadSeq = 0;
+let warningViewMode = 'local'; // 'local' | 'nationwide'
 
 function loadSettings() {
   state.apiKey  = localStorage.getItem(KEY_API)  || '';
@@ -327,38 +335,48 @@ async function fallbackBeijing() {
 }
 
 /* ================================================================
-   nmc.cn 预警加载（中央气象台官方数据）
+   预警加载：当前地区 + 全国
    ================================================================ */
-async function loadWarnings(city) {
+function formatWarningItem(a) {
+  const title = a.title || '气象预警';
+  const issuetime = a.issuetime || '';
+  const detailUrl = a.alertid ? `https://www.nmc.cn/publish/alarm/${a.alertid}.html` : (a.url ? `https://www.nmc.cn${a.url}` : '');
+  // 从标题中提取地区（如“河南省鹤壁市淇县气象台” -> “河南省鹤壁市淇县”）
+  const regionMatch = title.match(/^(.+?(?:省|市|县|区|旗|盟))气象台/);
+  const region = regionMatch ? regionMatch[1] : '';
+  return { title, issuetime, detailUrl, region };
+}
+
+async function loadLocalWarnings(city) {
   const cityName = city.name.replace(/[市县区旗盟]$/, '').trim();
   if (!cityName) return [];
-
   try {
-    // 拉取全国预警列表，pageSize 设大一些以提高命中率
-    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=200&signaltype=&signallevel=&province=`;
+    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`;
     const res = await fetch(url);
     if (!res.ok) return [];
     const data = await res.json();
-    // 响应结构：data.page.list[reference:1]
     const list = data?.data?.page?.list;
-    if (!Array.isArray(list) || !list.length) return [];
-
-    // 按城市名宽松匹配标题（nmc 的 title 通常包含“XX市/县气象台发布…”）
-    const matched = list.filter(a => {
-      const t = a.title || '';
-      return t.includes(cityName) || cityName.includes(t.replace(/气象台.*$/, '').replace(/^.*?省/, '').replace(/市.*$/, '').trim());
-    });
-
-    // 取前 3 条，映射为前端统一格式
-    return matched.slice(0, 3).map(a => ({
-      title: a.title || '气象预警',
-      issuetime: a.issuetime || '',
-      alertid: a.alertid || '',
-      // nmc.cn 的详情页 URL 需要通过 alertid 拼出[reference:2]
-      detailUrl: a.alertid ? `https://www.nmc.cn/publish/alarm/${a.alertid}.html` : '',
-    }));
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter(a => (a.title || '').includes(cityName))
+      .map(formatWarningItem);
   } catch (e) {
-    console.warn('nmc.cn 预警请求失败:', e);
+    console.warn('当前地区预警加载失败:', e);
+    return [];
+  }
+}
+
+async function loadNationwideWarnings() {
+  try {
+    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = data?.data?.page?.list;
+    if (!Array.isArray(list)) return [];
+    return list.map(formatWarningItem);
+  } catch (e) {
+    console.warn('全国预警加载失败:', e);
     return [];
   }
 }
@@ -372,8 +390,8 @@ async function loadWeather() {
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
-  // 并行发起预警请求（不阻塞天气主流程）
-  const warningsPromise = loadWarnings(city);
+  const localWarningsPromise = loadLocalWarnings(city);
+  const nationwideWarningsPromise = loadNationwideWarnings();
 
   const { api } = getHosts(); const key = state.apiKey, loc = city.id;
   const coord = city.lon && city.lat ? `${city.lon},${city.lat}` : null;
@@ -391,8 +409,11 @@ async function loadWeather() {
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
 
-  const r = await Promise.allSettled(tasks);
-  const warnings = await warningsPromise;
+  const [r, localWarnings, nationwideWarnings] = await Promise.all([
+    Promise.allSettled(tasks),
+    localWarningsPromise,
+    nationwideWarningsPromise,
+  ]);
   if (seq !== loadSeq) return;
 
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
@@ -412,7 +433,8 @@ async function loadWeather() {
     daily: dailyData.daily,
     air: r[3].status==='fulfilled' && r[3].value?.code==='200' ? r[3].value.now : null,
     indices: r[4].status==='fulfilled' && r[4].value?.code==='200' ? r[4].value.daily : [],
-    warnings: warnings,
+    localWarnings: localWarnings,
+    nationwideWarnings: nationwideWarnings,
     minutely: r[5].status==='fulfilled' && r[5].value?.code==='200' ? r[5].value : null,
     sun: r[6].status==='fulfilled' && r[6].value?.code==='200' ? r[6].value.daily?.[0] : null,
     moon: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.moonPhase?.[0] : null,
@@ -429,7 +451,7 @@ function renderAll() {
   document.getElementById('cityName').innerHTML = `${d.city.name} <small>▼ 切换</small>`;
   document.getElementById('homeContent').innerHTML = buildHome(d);
   document.getElementById('rainContent').innerHTML = buildRainPage(d.minutely);
-  document.getElementById('warningContent').innerHTML = buildWarningPage(d.warnings);
+  document.getElementById('warningContent').innerHTML = buildWarningPage(d);
   document.getElementById('indicesContent').innerHTML = buildIndicesPage(d.indices);
   document.getElementById('detailContent').innerHTML = buildDetailPage(d);
 }
@@ -456,8 +478,9 @@ document.head.appendChild(iconStyle);
 function buildHome(d) {
   const today = d.daily[0] || {};
   const hasRain = checkHasRain(d.minutely);
+  const localWarns = d.localWarnings || [];
   return `
-    ${buildWarningBanner(d.warnings)}
+    ${buildWarningBanner(localWarns)}
     <div class="hero">
       <div class="main-weather-icon">${iconHtml(d.now.icon)}</div>
       <div class="temp">${d.now.temp}<sup>°</sup></div>
@@ -475,15 +498,11 @@ function buildHome(d) {
 function buildWarningBanner(alerts) {
   if (!alerts?.length) return '';
   const a = alerts[0];
-  // nmc.cn 字段：title, issuetime, detailUrl
-  const title = a.title || '气象预警';
-  const time = a.issuetime || '';
-  const detailUrl = a.detailUrl || '';
   return `<div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-    <span class="w-icon">⚠</span><span class="w-title">${title}</span>
-    <span class="w-severity">${time}</span>
+    <span class="w-icon">⚠</span><span class="w-title">${a.title}</span>
+    <span class="w-severity">${a.issuetime}</span>
     <div class="warning-detail">
-      ${detailUrl ? `<div><a href="${detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
+      ${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
       <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
     </div>
   </div>`;
@@ -544,25 +563,56 @@ function buildRainPage(m) {
   return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div><div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。</div>`;
 }
 
-/* ===== 预警页（nmc.cn 数据） ===== */
-function buildWarningPage(warnings) {
-  if (!warnings?.length) return `<div class="rain-empty"><div class="re-icon">✅</div>当前无气象预警<br><span style="font-size:12px;opacity:0.6">中央气象台暂未发布该地区生效中的预警</span></div>`;
-  return `<div class="section-label" style="margin-top:16px">生效中的预警（${warnings.length}）</div>` +
-    warnings.map(a => {
-      const title = a.title || '气象预警';
-      const time = a.issuetime || '';
-      const detailUrl = a.detailUrl || '';
-      return `<div class="warning-list-item">
-        <div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-          <span class="w-icon">⚠</span><span class="w-title">${title}</span>
-          <span class="w-severity">${time}</span>
-          <div class="warning-detail">
-            ${detailUrl ? `<div><a href="${detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
-            <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
-          </div>
+/* ===== 预警页（含切换控件） ===== */
+function buildWarningPage(d) {
+  const local = d.localWarnings || [];
+  const nationwide = d.nationwideWarnings || [];
+  const list = warningViewMode === 'local' ? local : nationwide;
+  const cityName = d.city.name;
+
+  const switchHtml = `
+    <div class="warning-switch">
+      <div class="ws-btn ${warningViewMode === 'local' ? 'active' : ''}" onclick="switchWarningView('local')">当前地区 · ${cityName}</div>
+      <div class="ws-btn ${warningViewMode === 'nationwide' ? 'active' : ''}" onclick="switchWarningView('nationwide')">全国预警 (${nationwide.length})</div>
+    </div>`;
+
+  if (!list.length) {
+    const emptyMsg = warningViewMode === 'local'
+      ? `<div class="rain-empty"><div class="re-icon">✅</div>${cityName} 当前无生效预警<br><span style="font-size:12px;opacity:0.6">可切换到“全国预警”查看其他地区</span></div>`
+      : `<div class="rain-empty"><div class="re-icon">✅</div>全国当前无生效预警</div>`;
+    return switchHtml + emptyMsg;
+  }
+
+  const items = list.map(a => {
+    const regionTag = warningViewMode === 'nationwide' && a.region
+      ? `<div class="w-region">📍 ${a.region}</div>` : '';
+    return `<div class="warning-list-item">
+      <div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
+        <span class="w-icon">⚠</span>
+        <div style="flex:1;min-width:0">
+          <span class="w-title">${a.title}</span>
+          ${regionTag}
         </div>
-      </div>`;
-    }).join('');
+        <span class="w-severity">${a.issuetime}</span>
+        <div class="warning-detail">
+          ${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
+          <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return switchHtml +
+    `<div class="section-label" style="margin-top:4px">${
+      warningViewMode === 'local' ? `${cityName} 生效预警` : `全国生效预警（前 ${list.length} 条）`
+    }</div>` + items;
+}
+
+function switchWarningView(mode) {
+  if (warningViewMode === mode) return;
+  warningViewMode = mode;
+  const d = state.data;
+  if (d) document.getElementById('warningContent').innerHTML = buildWarningPage(d);
 }
 
 function buildIndicesPage(indices) {
