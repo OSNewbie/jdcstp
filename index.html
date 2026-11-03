@@ -54,7 +54,6 @@
   .view.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-  /* ===== 预警切换控件 ===== */
   .warning-switch { display: flex; background: rgba(255,255,255,0.08); border-radius: 12px; padding: 3px; margin: 16px 0 14px; border: 1px solid rgba(255,255,255,0.10); }
   .ws-btn { flex: 1; padding: 9px 0; text-align: center; font-size: 13px; font-weight: 500; border-radius: 10px; cursor: pointer; color: var(--text-secondary); transition: background 0.2s, color 0.2s; user-select: none; }
   .ws-btn.active { background: rgba(255,255,255,0.18); color: #fff; font-weight: 600; }
@@ -89,13 +88,14 @@
   .hourly-card { padding: 16px 0 14px; margin-bottom: 18px; overflow: hidden; }
   .hourly-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 16px; scrollbar-width: none; }
   .hourly-scroll::-webkit-scrollbar { display: none; }
-  .hour-item { flex: 0 0 62px; text-align: center; scroll-snap-align: start; position: relative; padding-bottom: 8px; }
+  .hour-item { flex: 0 0 64px; text-align: center; scroll-snap-align: start; position: relative; padding-bottom: 8px; }
   .hour-item .h-time { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
-  .hour-item .h-icon { font-size: 22px; margin-bottom: 6px; line-height: 1; transition: color 0.3s; }
+  .hour-item .h-icon { font-size: 22px; margin-bottom: 4px; line-height: 1; transition: color 0.3s; }
+  .hour-item .h-text { font-size: 10px; color: var(--text-secondary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hour-item .h-temp { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .hour-item.now .h-time { color: #fff; font-weight: 600; }
   .hour-item.now::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 18px; height: 2px; border-radius: 1px; background: #fff; }
-  .h-pop { font-size: 10px; color: #7ec8e3; margin-top: 2px; }
+  .h-pop { font-size: 9px; color: #7ec8e3; margin-top: 2px; }
   .h-pop-bar { height: 2px; border-radius: 1px; background: rgba(255,255,255,0.12); margin: 2px 12px 0; }
   .h-pop-bar > div { height: 100%; border-radius: 1px; background: #7ec8e3; }
 
@@ -105,7 +105,8 @@
   .day-name { width: 48px; font-size: 14px; font-weight: 500; flex-shrink: 0; }
   .day-name.today { font-weight: 700; }
   .day-icon { width: 34px; text-align: center; font-size: 20px; flex-shrink: 0; transition: color 0.3s; }
-  .day-rain { width: 62px; font-size: 10px; color: var(--text-secondary); text-align: right; flex-shrink: 0; line-height: 1.35; }
+  .day-text { width: 44px; font-size: 10px; color: var(--text-secondary); flex-shrink: 0; text-align: center; line-height: 1.3; }
+  .day-rain { width: 54px; font-size: 10px; color: var(--text-secondary); text-align: right; flex-shrink: 0; line-height: 1.35; }
   .day-bar-wrap { flex: 1; display: flex; align-items: center; gap: 8px; margin: 0 10px; min-width: 0; }
   .day-lo, .day-hi { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; width: 28px; flex-shrink: 0; }
   .day-lo { text-align: right; } .day-hi { text-align: left; color: #fff; font-weight: 600; }
@@ -142,6 +143,15 @@
   .astro-item .a-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; }
   .astro-item .a-value { font-size: 15px; font-weight: 600; }
   .astro-item .a-sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  .source-compare { padding: 16px; margin-bottom: 18px; }
+  .src-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .src-row:last-of-type { border-bottom: none; }
+  .src-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .src-value { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 10px; }
+  .src-note { font-size: 10px; color: var(--text-secondary); text-align: right; width: 110px; line-height: 1.3; }
+  .src-diff { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.6; }
+
   .map-entry { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 18px; cursor: pointer; }
   .map-entry .me-text { font-size: 14px; font-weight: 500; }
   .map-entry .me-arrow { color: var(--text-secondary); font-size: 18px; }
@@ -194,7 +204,7 @@
   .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 380px) { .metrics-grid, .indices-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 380px) { .metrics-grid, .indices-grid { grid-template-columns: 1fr; } .src-note { width: 90px; } }
 </style>
 </head>
 <body>
@@ -254,7 +264,7 @@ const KEY_CITIES='qweather_cities', KEY_ACTIVE='qweather_active_index';
 const state = { apiKey: '', apiHost: '', cities: [], activeIndex: 0, data: null };
 let currentTab = 'home';
 let loadSeq = 0;
-let warningViewMode = 'local'; // 'local' | 'nationwide'
+let warningViewMode = 'local';
 
 function loadSettings() {
   state.apiKey  = localStorage.getItem(KEY_API)  || '';
@@ -334,56 +344,54 @@ async function fallbackBeijing() {
   try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent('北京')}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat), adcode:l.adcode||'' }); } else { document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>'; } } catch (e) { document.getElementById('homeContent').innerHTML = `<div class="loading">加载失败：${e.message}</div>`; }
 }
 
-/* ================================================================
-   预警加载：当前地区 + 全国
-   ================================================================ */
+/* ===== 预警加载 ===== */
 function formatWarningItem(a) {
   const title = a.title || '气象预警';
   const issuetime = a.issuetime || '';
   const detailUrl = a.alertid ? `https://www.nmc.cn/publish/alarm/${a.alertid}.html` : (a.url ? `https://www.nmc.cn${a.url}` : '');
-  // 从标题中提取地区（如“河南省鹤壁市淇县气象台” -> “河南省鹤壁市淇县”）
   const regionMatch = title.match(/^(.+?(?:省|市|县|区|旗|盟))气象台/);
   const region = regionMatch ? regionMatch[1] : '';
   return { title, issuetime, detailUrl, region };
 }
-
 async function loadLocalWarnings(city) {
   const cityName = city.name.replace(/[市县区旗盟]$/, '').trim();
   if (!cityName) return [];
   try {
-    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`;
-    const res = await fetch(url);
+    const res = await fetch(`https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`);
     if (!res.ok) return [];
     const data = await res.json();
     const list = data?.data?.page?.list;
     if (!Array.isArray(list)) return [];
-    return list
-      .filter(a => (a.title || '').includes(cityName))
-      .map(formatWarningItem);
-  } catch (e) {
-    console.warn('当前地区预警加载失败:', e);
-    return [];
-  }
+    return list.filter(a => (a.title || '').includes(cityName)).map(formatWarningItem);
+  } catch { return []; }
 }
-
 async function loadNationwideWarnings() {
   try {
-    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`;
-    const res = await fetch(url);
+    const res = await fetch(`https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`);
     if (!res.ok) return [];
     const data = await res.json();
     const list = data?.data?.page?.list;
     if (!Array.isArray(list)) return [];
     return list.map(formatWarningItem);
-  } catch (e) {
-    console.warn('全国预警加载失败:', e);
-    return [];
-  }
+  } catch { return []; }
 }
 
-/* ================================================================
-   天气加载
-   ================================================================ */
+/* ===== Open-Meteo 对比 ===== */
+async function loadOpenMeteo(city) {
+  if (!city.lon || !city.lat) return null;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weather_code&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      temp: data.current?.temperature_2m ?? '—',
+      note: '数据源：ECMWF / CMA 模型',
+    };
+  } catch { return null; }
+}
+
+/* ===== 天气加载 ===== */
 async function loadWeather() {
   const city = getActiveCity();
   if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
@@ -392,6 +400,7 @@ async function loadWeather() {
 
   const localWarningsPromise = loadLocalWarnings(city);
   const nationwideWarningsPromise = loadNationwideWarnings();
+  const openMeteoPromise = loadOpenMeteo(city);
 
   const { api } = getHosts(); const key = state.apiKey, loc = city.id;
   const coord = city.lon && city.lat ? `${city.lon},${city.lat}` : null;
@@ -409,10 +418,11 @@ async function loadWeather() {
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
 
-  const [r, localWarnings, nationwideWarnings] = await Promise.all([
+  const [r, localWarnings, nationwideWarnings, openMeteo] = await Promise.all([
     Promise.allSettled(tasks),
     localWarningsPromise,
     nationwideWarningsPromise,
+    openMeteoPromise,
   ]);
   if (seq !== loadSeq) return;
 
@@ -438,13 +448,12 @@ async function loadWeather() {
     minutely: r[5].status==='fulfilled' && r[5].value?.code==='200' ? r[5].value : null,
     sun: r[6].status==='fulfilled' && r[6].value?.code==='200' ? r[6].value.daily?.[0] : null,
     moon: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.moonPhase?.[0] : null,
+    openMeteo: openMeteo,
   };
   renderAll();
 }
 
-/* ================================================================
-   渲染
-   ================================================================ */
+/* ===== 渲染 ===== */
 function renderAll() {
   const d = state.data; if (!d) return;
   setTheme(d.now.icon);
@@ -518,7 +527,9 @@ function buildHourly(hourly) {
     const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
     const pop = parseInt(h.pop, 10) || 0;
     return `<div class="hour-item ${i === 0 ? 'now' : ''}">
-      <div class="h-time">${label}</div><div class="h-icon">${iconHtml(h.icon)}</div>
+      <div class="h-time">${label}</div>
+      <div class="h-icon">${iconHtml(h.icon)}</div>
+      <div class="h-text">${h.text || ''}</div>
       <div class="h-temp">${h.temp}°</div>
       ${pop > 0 ? `<div class="h-pop">降水 ${pop}%</div><div class="h-pop-bar"><div style="width:${Math.min(pop,100)}%"></div></div>` : ''}
     </div>`;
@@ -541,7 +552,9 @@ function buildDaily(daily) {
     if (d.precip && parseFloat(d.precip) > 0) meta.push(`降水 ${d.precip}毫米`);
     if (d.uvIndex) meta.push(`紫外线 ${UV_CN(d.uvIndex)}`);
     return `<div class="day-row">
-      <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div><div class="day-icon">${iconHtml(d.iconDay)}</div>
+      <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div>
+      <div class="day-icon">${iconHtml(d.iconDay)}</div>
+      <div class="day-text">${d.textDay || ''}</div>
       <div class="day-rain">${meta.join('<br>')}</div>
       <div class="day-bar-wrap"><span class="day-lo">${lo}°</span>
         <div class="bar-track"><div class="bar-fill" style="left:${left}%;width:${width}%"></div></div>
@@ -563,57 +576,23 @@ function buildRainPage(m) {
   return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div><div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。</div>`;
 }
 
-/* ===== 预警页（含切换控件） ===== */
 function buildWarningPage(d) {
   const local = d.localWarnings || [];
   const nationwide = d.nationwideWarnings || [];
   const list = warningViewMode === 'local' ? local : nationwide;
   const cityName = d.city.name;
-
-  const switchHtml = `
-    <div class="warning-switch">
-      <div class="ws-btn ${warningViewMode === 'local' ? 'active' : ''}" onclick="switchWarningView('local')">当前地区 · ${cityName}</div>
-      <div class="ws-btn ${warningViewMode === 'nationwide' ? 'active' : ''}" onclick="switchWarningView('nationwide')">全国预警 (${nationwide.length})</div>
-    </div>`;
-
+  const switchHtml = `<div class="warning-switch"><div class="ws-btn ${warningViewMode === 'local' ? 'active' : ''}" onclick="switchWarningView('local')">当前地区 · ${cityName}</div><div class="ws-btn ${warningViewMode === 'nationwide' ? 'active' : ''}" onclick="switchWarningView('nationwide')">全国预警 (${nationwide.length})</div></div>`;
   if (!list.length) {
-    const emptyMsg = warningViewMode === 'local'
-      ? `<div class="rain-empty"><div class="re-icon">✅</div>${cityName} 当前无生效预警<br><span style="font-size:12px;opacity:0.6">可切换到“全国预警”查看其他地区</span></div>`
-      : `<div class="rain-empty"><div class="re-icon">✅</div>全国当前无生效预警</div>`;
+    const emptyMsg = warningViewMode === 'local' ? `<div class="rain-empty"><div class="re-icon">✅</div>${cityName} 当前无生效预警<br><span style="font-size:12px;opacity:0.6">可切换到“全国预警”查看其他地区</span></div>` : `<div class="rain-empty"><div class="re-icon">✅</div>全国当前无生效预警</div>`;
     return switchHtml + emptyMsg;
   }
-
   const items = list.map(a => {
-    const regionTag = warningViewMode === 'nationwide' && a.region
-      ? `<div class="w-region">📍 ${a.region}</div>` : '';
-    return `<div class="warning-list-item">
-      <div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-        <span class="w-icon">⚠</span>
-        <div style="flex:1;min-width:0">
-          <span class="w-title">${a.title}</span>
-          ${regionTag}
-        </div>
-        <span class="w-severity">${a.issuetime}</span>
-        <div class="warning-detail">
-          ${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
-          <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
-        </div>
-      </div>
-    </div>`;
+    const regionTag = warningViewMode === 'nationwide' && a.region ? `<div class="w-region">📍 ${a.region}</div>` : '';
+    return `<div class="warning-list-item"><div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')"><span class="w-icon">⚠</span><div style="flex:1;min-width:0"><span class="w-title">${a.title}</span>${regionTag}</div><span class="w-severity">${a.issuetime}</span><div class="warning-detail">${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}<div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div></div></div></div>`;
   }).join('');
-
-  return switchHtml +
-    `<div class="section-label" style="margin-top:4px">${
-      warningViewMode === 'local' ? `${cityName} 生效预警` : `全国生效预警（前 ${list.length} 条）`
-    }</div>` + items;
+  return switchHtml + `<div class="section-label" style="margin-top:4px">${warningViewMode === 'local' ? `${cityName} 生效预警` : `全国生效预警（前 ${list.length} 条）`}</div>` + items;
 }
-
-function switchWarningView(mode) {
-  if (warningViewMode === mode) return;
-  warningViewMode = mode;
-  const d = state.data;
-  if (d) document.getElementById('warningContent').innerHTML = buildWarningPage(d);
-}
+function switchWarningView(mode) { if (warningViewMode === mode) return; warningViewMode = mode; const d = state.data; if (d) document.getElementById('warningContent').innerHTML = buildWarningPage(d); }
 
 function buildIndicesPage(indices) {
   if (!indices?.length) return `<div class="rain-empty"><div class="re-icon">📋</div>暂无生活指数数据</div>`;
@@ -622,7 +601,7 @@ function buildIndicesPage(indices) {
 }
 
 function buildDetailPage(d) {
-  return `<div class="section-label" style="margin-top:16px">详细指标</div>${buildMetrics(d.now, d.air)}${buildAstro(d.sun, d.moon)}<div class="map-entry glass" onclick="window.open('https://www.qweather.com/weather-map/', '_blank')"><span class="me-text">🗺️ 天气地图（雷达 / 风场 / 温度图层）</span><span class="me-arrow">›</span></div>`;
+  return `<div class="section-label" style="margin-top:16px">详细指标</div>${buildMetrics(d.now, d.air)}${buildAstro(d.sun, d.moon)}${buildSourceCompare(d)}<div class="map-entry glass" onclick="window.open('https://www.qweather.com/weather-map/', '_blank')"><span class="me-text">🗺️ 天气地图（雷达 / 风场 / 温度图层）</span><span class="me-arrow">›</span></div>`;
 }
 
 function buildMetrics(now, air) {
@@ -647,6 +626,23 @@ function buildAstro(sun, moon) {
   if (sun) { items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`); items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`); }
   if (moon) { items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`); items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`); }
   return `<div class="section-label">天文</div><div class="astro-card glass">${items.join('')}</div>`;
+}
+
+function buildSourceCompare(d) {
+  if (!d.openMeteo) return '';
+  const qw = parseInt(d.now.temp, 10);
+  const om = parseFloat(d.openMeteo.temp);
+  let diffText = '';
+  if (!isNaN(qw) && !isNaN(om)) {
+    const diff = Math.abs(qw - om).toFixed(1);
+    diffText = `两源当前温差 ${diff}°`;
+  }
+  return `<div class="section-label">数据源对比</div>
+    <div class="source-compare glass">
+      <div class="src-row"><span class="src-name">和风天气（当前）</span><span class="src-value">${d.now.temp}°</span><span class="src-note">官方公布晴雨准确率约 85%+</span></div>
+      <div class="src-row"><span class="src-name">Open-Meteo</span><span class="src-value">${d.openMeteo.temp}°</span><span class="src-note">${d.openMeteo.note}</span></div>
+      <div class="src-diff">${diffText ? diffText + '。' : ''}准确率为平台公开统计值，非当前城市实时计算。</div>
+    </div>`;
 }
 
 function metricCard(label, value, sub) { return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`; }
