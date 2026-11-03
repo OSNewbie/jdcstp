@@ -72,6 +72,9 @@
   .hero .feels-like { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
   .hero .hi-lo { display: inline-flex; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
 
+  /* 一句话建议 */
+  .advice-line { margin: 14px auto 0; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); display: inline-block; max-width: 92%; }
+
   .rain-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 16px; border-radius: 16px; background: rgba(126,200,227,0.15); border: 1px solid rgba(126,200,227,0.35); cursor: pointer; transition: transform 0.15s; }
   .rain-banner:active { transform: scale(0.98); }
   .rain-banner .rb-icon { font-size: 22px; }
@@ -139,29 +142,29 @@
   .astro-item .a-value { font-size: 15px; font-weight: 600; }
   .astro-item .a-sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
-  .acc-card { padding: 20px 16px 18px; margin-bottom: 18px; text-align: center; }
-  .acc-ring-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
-  .acc-ring { --pct: 0; width: 140px; height: 140px; border-radius: 50%; background: conic-gradient(#7ec8e3 0% calc(var(--pct) * 1%), rgba(255,255,255,0.08) calc(var(--pct) * 1%) 100%); display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 30px rgba(126,200,227,0.2); transition: background 0.6s ease; }
-  .acc-ring::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: rgba(22,30,44,0.88); backdrop-filter: blur(10px); }
-  .acc-inner { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .acc-pct { font-size: 38px; font-weight: 700; line-height: 1; color: #fff; font-variant-numeric: tabular-nums; }
-  .acc-pct sup { font-size: 16px; font-weight: 500; vertical-align: super; opacity: 0.8; }
-  .acc-label { font-size: 11px; color: var(--text-secondary); margin-top: 6px; letter-spacing: 1px; }
-  .acc-level { font-size: 12px; font-weight: 600; margin-top: 2px; }
-  .acc-level.high { color: #7ec8e3; }
-  .acc-level.mid  { color: #ffd166; }
-  .acc-level.low  { color: #ff9f43; }
-  .acc-breakdown { display: flex; gap: 10px; margin: 14px 0 6px; }
-  .acc-item { flex: 1; padding: 12px 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
-  .acc-item .ai-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; }
-  .acc-item .ai-value { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
-  .acc-item .ai-note { font-size: 9px; color: var(--text-secondary); margin-top: 2px; }
-  .acc-sources { margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
-  .acc-src-row { display: flex; align-items: center; padding: 8px 0; font-size: 12px; }
-  .acc-src-name { flex: 1; text-align: left; color: var(--text-secondary); }
-  .acc-src-temp { width: 60px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .acc-src-tag { width: 72px; text-align: right; font-size: 10px; color: var(--text-secondary); }
-  .acc-note { margin-top: 12px; font-size: 10px; color: var(--text-secondary); line-height: 1.6; text-align: left; padding: 0 4px; }
+  /* 可信度卡片（结论优先） */
+  .conf-card { padding: 20px 16px; margin-bottom: 18px; }
+  .conf-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .conf-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
+  .conf-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .conf-temps { display: flex; justify-content: space-around; padding: 14px 0; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 12px; }
+  .conf-temp-item { text-align: center; flex: 1; }
+  .ct-val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ct-name { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+  .conf-meta { font-size: 11px; color: var(--text-secondary); line-height: 1.6; text-align: center; }
+  .conf-warn { margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.3); font-size: 11px; line-height: 1.6; color: #ffd166; }
+  .conf-detail { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .conf-detail summary { font-size: 11px; color: var(--text-secondary); cursor: pointer; user-select: none; outline: none; }
+  .conf-raw { margin-top: 10px; }
+  .conf-raw-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; color: var(--text-secondary); }
+  .conf-raw-row span:last-child { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* WeatherAPI 补充结论 */
+  .wa-mini { padding: 16px; margin-bottom: 18px; }
+  .wa-mini-text { font-size: 14px; font-weight: 500; line-height: 1.6; margin-bottom: 10px; }
+  .wa-mini-detail summary { font-size: 11px; color: var(--text-secondary); cursor: pointer; user-select: none; outline: none; }
+  .wa-mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; font-size: 11px; color: var(--text-secondary); }
+  .wa-mini-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
 
   .api-status-bar { position: fixed; bottom: calc(var(--tabbar-h) + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--api-bar-h); background: rgba(16, 22, 34, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; padding: 0 12px; gap: 6px; font-size: 10px; color: var(--text-secondary); z-index: 49; cursor: pointer; user-select: none; overflow: hidden; }
   .api-status-bar:active { background: rgba(24, 32, 46, 0.96); }
@@ -248,7 +251,7 @@
   .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 380px) { .metrics-grid, .indices-grid { grid-template-columns: 1fr; } .as-text { max-width: 38%; } }
+  @media (max-width: 380px) { .metrics-grid, .indices-grid { grid-template-columns: 1fr; } .as-text { max-width: 38%; } .wa-mini-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -316,8 +319,8 @@
     <input type="text" id="apiKeyInput" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
     <label>API Host（可选）</label>
     <input type="text" id="apiHostInput" placeholder="默认 devapi.qweather.com" autocomplete="off" spellcheck="false">
-    <label>WeatherAPI Key（可选，用于三源共识计算）</label>
-    <input type="text" id="weatherApiKeyInput" placeholder="前往 weatherapi.com 注册获取，免费 100 万次/月" autocomplete="off" spellcheck="false">
+    <label>WeatherAPI Key（可选，用于多源融合）</label>
+    <input type="text" id="weatherApiKeyInput" placeholder="前往 weatherapi.com 注册获取" autocomplete="off" spellcheck="false">
     <div class="settings-actions">
       <button class="btn btn-ghost" onclick="closeSettings()">取消</button>
       <button class="btn btn-primary" onclick="saveSettings()">保存并测试</button>
@@ -330,14 +333,12 @@ const KEY_API='qweather_api_key', KEY_HOST='qweather_api_host', KEY_WA='weathera
 const KEY_CITIES='qweather_cities', KEY_ACTIVE='qweather_active_index';
 const KEY_API_STATS='qweather_api_stats';
 const QWEATHER_MONTHLY_QUOTA = 50000;
-const WEATHERAPI_MONTHLY_QUOTA = 1000000;
+const WEATHERAPI_MONTHLY_QUOTA = 100000;
 
 const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:null };
 let currentTab = 'home';
 let loadSeq = 0;
 let warningViewMode = 'local';
-
-/* WeatherAPI 最近一次请求状态 */
 let lastWaStatus = { status: '未调用', time: '', ok: null };
 
 function nowStr() {
@@ -346,59 +347,34 @@ function nowStr() {
 }
 
 /* ================================================================
-   API 调用统计
+   API 统计（与之前一致）
    ================================================================ */
 function getMonthKey() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 }
 function emptyStats() {
-  return {
-    month: getMonthKey(),
-    sources: {
-      qweather:   { ok: 0, fail: 0 },
-      openmeteo:  { ok: 0, fail: 0 },
-      weatherapi: { ok: 0, fail: 0 },
-      nmc:        { ok: 0, fail: 0 },
-    },
-  };
+  return { month: getMonthKey(), sources: { qweather:{ok:0,fail:0}, openmeteo:{ok:0,fail:0}, weatherapi:{ok:0,fail:0}, nmc:{ok:0,fail:0} } };
 }
 function loadApiStats() {
-  try {
-    const raw = localStorage.getItem(KEY_API_STATS);
-    if (raw) {
-      const s = JSON.parse(raw);
-      if (s && s.month === getMonthKey() && s.sources) return s;
-    }
-  } catch {}
+  try { const raw = localStorage.getItem(KEY_API_STATS); if (raw) { const s = JSON.parse(raw); if (s && s.month === getMonthKey() && s.sources) return s; } } catch {}
   return emptyStats();
 }
-function saveApiStats(s) {
-  try { localStorage.setItem(KEY_API_STATS, JSON.stringify(s)); } catch {}
-}
+function saveApiStats(s) { try { localStorage.setItem(KEY_API_STATS, JSON.stringify(s)); } catch {} }
 let apiStats = loadApiStats();
 
 function trackApi(source, ok) {
   const current = getMonthKey();
   if (apiStats.month !== current) apiStats = emptyStats();
-  if (!apiStats.sources[source]) apiStats.sources[source] = { ok: 0, fail: 0 };
-  if (ok) apiStats.sources[source].ok++;
-  else    apiStats.sources[source].fail++;
+  if (!apiStats.sources[source]) apiStats.sources[source] = { ok:0, fail:0 };
+  if (ok) apiStats.sources[source].ok++; else apiStats.sources[source].fail++;
   saveApiStats(apiStats);
   updateApiStatusBar();
 }
-
 async function trackedFetch(url, source) {
-  try {
-    const r = await fetch(url);
-    trackApi(source, r.ok);
-    return r;
-  } catch (e) {
-    trackApi(source, false);
-    throw e;
-  }
+  try { const r = await fetch(url); trackApi(source, r.ok); return r; }
+  catch (e) { trackApi(source, false); throw e; }
 }
-
 async function fetchJson(url, source = 'qweather') {
   const r = await trackedFetch(url, source);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -406,7 +382,7 @@ async function fetchJson(url, source = 'qweather') {
 }
 
 /* ================================================================
-   独立测试 WeatherAPI
+   WeatherAPI 测试
    ================================================================ */
 async function testWeatherAPI(key) {
   if (!key) return { ok: false, error: '未配置 Key' };
@@ -417,27 +393,21 @@ async function testWeatherAPI(key) {
     const data = await res.json();
     if (data.error) return { ok: false, error: data.error.message || '未知错误' };
     return { ok: true, temp: data.current?.temp_c, city: data.location?.name };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
+  } catch (e) { return { ok: false, error: e.message }; }
 }
-
 async function testWeatherApiFromPanel() {
-  const key = state.waKey || document.getElementById('weatherApiKeyInput')?.value.trim();
+  const key = state.waKey;
   if (!key) { alert('请先在设置中填写并保存 WeatherAPI Key'); return; }
   const btn = document.getElementById('testWaBtn');
   if (btn) { btn.textContent = '测试中…'; btn.disabled = true; }
   const r = await testWeatherAPI(key);
   if (btn) { btn.textContent = '测试 WeatherAPI'; btn.disabled = false; }
-  if (r.ok) {
-    alert(`✅ WeatherAPI 测试成功\n\n返回城市：${r.city}\n当前温度：${r.temp}°C\n\n如果后台没记录：\n1. 确认你在 weatherapi.com 后台看，不是和风控制台\n2. WeatherAPI 用量统计有延迟，通常几小时后才更新\n3. 免费层不提供逐条请求日志，只看月度总数`);
-  } else {
-    alert(`❌ WeatherAPI 测试失败\n\n原因：${r.error}\n\n请检查：\n1. Key 是否复制完整（无多余空格）\n2. 是否已完成邮箱验证\n3. 是否已在 weatherapi.com 后台激活账号`);
-  }
+  if (r.ok) alert(`✅ WeatherAPI 测试成功\n返回城市：${r.city}\n当前温度：${r.temp}°C`);
+  else alert(`❌ WeatherAPI 测试失败\n原因：${r.error}`);
 }
 
 /* ================================================================
-   API 状态 UI
+   状态条 UI
    ================================================================ */
 function computeTotals(sources) {
   let ok = 0, fail = 0;
@@ -447,139 +417,87 @@ function computeTotals(sources) {
 function getHealthClass(ok, fail) {
   const total = ok + fail;
   if (!total) return '';
-  const failRate = fail / total;
-  if (failRate > 0.05) return 'err';
-  if (failRate > 0)    return 'warn';
+  if (fail / total > 0.05) return 'err';
+  if (fail > 0) return 'warn';
   return '';
 }
-
 function updateApiStatusBar() {
-  const bar = document.getElementById('apiStatusBar');
-  if (!bar) return;
-
-  const qw  = apiStats.sources.qweather   || { ok:0, fail:0 };
-  const wa  = apiStats.sources.weatherapi || { ok:0, fail:0 };
-  const om  = apiStats.sources.openmeteo  || { ok:0, fail:0 };
-  const nmc = apiStats.sources.nmc        || { ok:0, fail:0 };
-
-  const qwUsed  = qw.ok + qw.fail;
-  const waUsed  = wa.ok + wa.fail;
-  const omUsed  = om.ok + om.fail;
-  const nmcUsed = nmc.ok + nmc.fail;
-
+  const qw = apiStats.sources.qweather || { ok:0, fail:0 };
+  const wa = apiStats.sources.weatherapi || { ok:0, fail:0 };
+  const om = apiStats.sources.openmeteo || { ok:0, fail:0 };
+  const nmc = apiStats.sources.nmc || { ok:0, fail:0 };
+  const qwUsed = qw.ok + qw.fail, waUsed = wa.ok + wa.fail, omUsed = om.ok + om.fail, nmcUsed = nmc.ok + nmc.fail;
   const pct = Math.min(100, (qwUsed / QWEATHER_MONTHLY_QUOTA) * 100);
   const totals = computeTotals(apiStats.sources);
   let health = getHealthClass(totals.ok, totals.fail);
-
-  // 配了 WA Key 但从来没有成功/失败的记录，且已经加载过天气 → 警告
-  if (state.waKey && waUsed === 0 && qwUsed > 0) {
-    health = 'warn';
-  }
+  if (state.waKey && waUsed === 0 && qwUsed > 0) health = 'warn';
 
   document.getElementById('asDot').className = 'as-dot' + (health ? ' ' + health : '');
-
   const parts = [`和风 ${qwUsed}`];
   if (state.waKey) parts.push(waUsed > 0 ? `WA ${waUsed}` : 'WA 未生效');
   else if (waUsed > 0) parts.push(`WA ${waUsed}`);
   if (omUsed + nmcUsed > 0) parts.push(`其他 ${omUsed + nmcUsed}`);
-
   document.getElementById('asText').textContent = parts.join(' · ');
 
   const fill = document.getElementById('asProgressFill');
   fill.style.width = pct.toFixed(1) + '%';
   fill.className = 'as-progress-fill' + (pct >= 80 ? ' err' : pct >= 50 ? ' warn' : '');
-
   document.getElementById('asCount').textContent = qwUsed + '/' + QWEATHER_MONTHLY_QUOTA;
 }
-
 function toggleApiDetail() {
   const overlay = document.getElementById('apiDetailOverlay');
   const panel = document.getElementById('apiDetailPanel');
-  const open = overlay.classList.contains('show');
-  if (open) {
-    overlay.classList.remove('show');
-    panel.style.display = 'none';
-  } else {
-    renderApiDetail();
-    overlay.classList.add('show');
-    panel.style.display = 'block';
-  }
+  if (overlay.classList.contains('show')) { overlay.classList.remove('show'); panel.style.display = 'none'; }
+  else { renderApiDetail(); overlay.classList.add('show'); panel.style.display = 'block'; }
 }
-
 function renderApiDetail() {
-  const box = document.getElementById('adpSources');
-  if (!box) return;
-
-  const definitions = [
-    { key: 'qweather',   name: '和风天气',   quota: QWEATHER_MONTHLY_QUOTA,   quotaLabel: '免费额度 50,000 次/月' },
-    { key: 'weatherapi', name: 'WeatherAPI', quota: WEATHERAPI_MONTHLY_QUOTA, quotaLabel: state.waKey ? '免费层 100 万次/月' : '未配置' },
-    { key: 'openmeteo',  name: 'Open-Meteo', quota: null, quotaLabel: '免费层 · 无硬性上限' },
-    { key: 'nmc',        name: '中央气象台', quota: null, quotaLabel: '官方公开接口 · 无配额标注' },
+  const box = document.getElementById('adpSources'); if (!box) return;
+  const defs = [
+    { key:'qweather', name:'和风天气', quota:QWEATHER_MONTHLY_QUOTA, quotaLabel:'免费额度 50,000 次/月' },
+    { key:'weatherapi', name:'WeatherAPI', quota:WEATHERAPI_MONTHLY_QUOTA, quotaLabel: state.waKey ? '免费层 10 万次/月' : '未配置' },
+    { key:'openmeteo', name:'Open-Meteo', quota:null, quotaLabel:'免费层 · 无硬性上限' },
+    { key:'nmc', name:'中央气象台', quota:null, quotaLabel:'官方公开接口' },
   ];
-
-  box.innerHTML = definitions.map(def => {
-    const s = apiStats.sources[def.key] || { ok: 0, fail: 0 };
+  box.innerHTML = defs.map(def => {
+    const s = apiStats.sources[def.key] || { ok:0, fail:0 };
     const total = s.ok + s.fail;
     const health = getHealthClass(s.ok, s.fail);
-    let pct = 0;
-    if (def.quota) pct = Math.min(100, (total / def.quota) * 100);
-    else pct = total > 0 ? Math.min(100, (s.ok / total) * 100) : 0;
-    const barClass = 'adp-bar-fill' + (health ? ' ' + health : '');
-
+    const pct = def.quota ? Math.min(100, (total / def.quota) * 100) : (total > 0 ? Math.min(100, (s.ok / total) * 100) : 0);
     let statusLine = '';
     if (def.key === 'weatherapi') {
-      if (!state.waKey) {
-        statusLine = `<div class="adp-status-line warn">未配置 WeatherAPI Key。在设置中填入后点击“保存并测试”。</div>`;
-      } else if (lastWaStatus.ok === true) {
-        statusLine = `<div class="adp-status-line ok">最近一次请求：成功（${lastWaStatus.time}）</div>`;
-      } else if (lastWaStatus.ok === false) {
-        statusLine = `<div class="adp-status-line err">最近一次请求：失败 · ${lastWaStatus.status}（${lastWaStatus.time}）</div>`;
-      } else {
-        statusLine = `<div class="adp-status-line warn">已配置 Key，但尚未成功发起请求。检查城市是否有经纬度。</div>`;
-      }
+      if (!state.waKey) statusLine = `<div class="adp-status-line warn">未配置 WeatherAPI Key。</div>`;
+      else if (lastWaStatus.ok === true) statusLine = `<div class="adp-status-line ok">最近请求成功（${lastWaStatus.time}）</div>`;
+      else if (lastWaStatus.ok === false) statusLine = `<div class="adp-status-line err">最近请求失败 · ${lastWaStatus.status}（${lastWaStatus.time}）</div>`;
+      else statusLine = `<div class="adp-status-line warn">已配置 Key，尚未发起请求。</div>`;
     }
-
     return `<div class="adp-source">
-      <div class="adp-row">
-        <span class="adp-name">${def.name}</span>
-        <span class="adp-total">${total} 次</span>
-      </div>
+      <div class="adp-row"><span class="adp-name">${def.name}</span><span class="adp-total">${total} 次</span></div>
       <div class="adp-meta">成功 ${s.ok} · 失败 ${s.fail} · ${def.quotaLabel}</div>
-      <div class="adp-bar"><div class="${barClass}" style="width:${pct.toFixed(2)}%"></div></div>
+      <div class="adp-bar"><div class="adp-bar-fill ${health}" style="width:${pct.toFixed(2)}%"></div></div>
       ${def.quota ? `<div class="adp-quota-note">已用 ${total} / ${def.quota}（${pct.toFixed(2)}%）</div>` : ''}
       ${statusLine}
     </div>`;
   }).join('');
-
-  const sub = document.getElementById('adpSub');
-  if (sub) {
-    sub.textContent = `统计周期：${apiStats.month}（按自然月自动清零）。本表数字为网页本地记录，与各服务商后台独立。`;
-  }
 }
-
 function resetApiStats() {
   if (!confirm('确定重置本月 API 调用统计？')) return;
-  apiStats = emptyStats();
-  saveApiStats(apiStats);
-  updateApiStatusBar();
-  renderApiDetail();
+  apiStats = emptyStats(); saveApiStats(apiStats); updateApiStatusBar(); renderApiDetail();
 }
 
 /* ================================================================
    天气图标
    ================================================================ */
 function weatherEmoji(code) {
-  const c = String(code || '');
-  const n = parseInt(c, 10);
-  if (c === '150' || c === '151' || c === '152' || c === '153') return '🌙';
+  const c = String(code || ''), n = parseInt(c, 10);
+  if (['150','151','152','153'].includes(c)) return '🌙';
   if (c === '100') return '☀️';
-  if (c === '101' || c === '102' || c === '103') return '⛅';
+  if (['101','102','103'].includes(c)) return '⛅';
   if (c === '104') return '☁️';
-  if (c === '300' || c === '305') return '🌦️';
-  if (c === '302' || c === '303' || c === '304') return '⛈️';
-  if (c === '306' || c === '307' || c === '308' || c === '309' || c === '310' || c === '311' || c === '312' || c === '313' || c === '314' || c === '315' || c === '316' || c === '317' || c === '318' || c === '399') return '🌧️';
+  if (['300','305'].includes(c)) return '🌦️';
+  if (['302','303','304'].includes(c)) return '⛈️';
+  if (['306','307','308','309','310','311','312','313','314','315','316','317','318','399'].includes(c)) return '🌧️';
   if (n >= 400 && n < 500) return '❄️';
-  if (c === '503' || c === '504' || c === '507' || c === '508') return '🌪️';
+  if (['503','504','507','508'].includes(c)) return '🌪️';
   if (n >= 500 && n < 600) return '🌫️';
   if (n >= 300 && n < 400) return '🌧️';
   if (n >= 100 && n < 200) return '☁️';
@@ -588,44 +506,131 @@ function weatherEmoji(code) {
 function iconHtml(code) { return `<span class="weather-emoji">${weatherEmoji(code)}</span>`; }
 
 /* ================================================================
-   设置与城市
+   多源融合分析（核心新增）
+   ================================================================ */
+
+// 融合温度：加权平均 + 动态权重 + 分歧度计算
+function fuseTemperature(sources, mae) {
+  let wQw = 0.6, wOm = 0.2, wWa = 0.2;
+  if (mae) {
+    if (mae.mae < 1.5) { wQw = 0.5; wOm = 0.3; wWa = 0.2; }
+    else if (mae.mae > 3) { wQw = 0.7; wOm = 0.1; wWa = 0.2; }
+  }
+  const items = [];
+  if (typeof sources.qweather === 'number' && !isNaN(sources.qweather)) items.push({ t: sources.qweather, w: wQw });
+  if (typeof sources.openMeteo === 'number' && !isNaN(sources.openMeteo)) items.push({ t: sources.openMeteo, w: wOm });
+  if (typeof sources.weatherApi === 'number' && !isNaN(sources.weatherApi)) items.push({ t: sources.weatherApi, w: wWa });
+
+  if (items.length < 2) return null;
+
+  const totalW = items.reduce((s, x) => s + x.w, 0);
+  const fusedTemp = items.reduce((s, x) => s + x.t * x.w, 0) / totalW;
+  const values = items.map(x => x.t);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const variance = values.reduce((s, t) => s + (t - mean) ** 2, 0) / values.length;
+  const spread = Math.sqrt(variance);
+
+  return {
+    temp: Math.round(fusedTemp * 10) / 10,
+    spread: parseFloat(spread.toFixed(1)),
+    confidence: spread < 1 ? 'high' : spread < 2 ? 'mid' : 'low',
+    sourceCount: items.length,
+  };
+}
+
+// 天气现象投票
+function voteWeather(qwIcon, waText) {
+  const cat = (code) => {
+    const c = String(code || '');
+    if (c === '100' || c === '150') return '晴';
+    if (c.startsWith('10')) return '多云';
+    if (c.startsWith('3')) return '雨';
+    if (c.startsWith('4')) return '雪';
+    if (c.startsWith('5')) return '雾霾';
+    if (waText) return waText.includes('雨') ? '雨' : waText.includes('雪') ? '雪' : waText.includes('云') ? '多云' : '其他';
+    return '其他';
+  };
+  const votes = [cat(qwIcon)];
+  if (waText) votes.push(cat(null, waText));
+  const counts = {};
+  votes.forEach(v => counts[v] = (counts[v] || 0) + 1);
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return { category: top?.[0] || '未知', agreement: top?.[1] || 0, total: votes.length };
+}
+
+// 降水融合（最大值作为风险提示）
+function fusePrecipitation(pops) {
+  const valid = pops.filter(p => typeof p === 'number' && !isNaN(p));
+  if (!valid.length) return null;
+  const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+  const max = Math.max(...valid);
+  const min = Math.min(...valid);
+  return {
+    average: Math.round(avg),
+    maxRisk: max,
+    hasDisagreement: (max - min) > 30,
+    spread: max - min,
+  };
+}
+
+// 一句话生活建议（安全 > 便利 > 舒适）
+function buildAdvice(fused, weatherVote, precip, now, daily, air) {
+  const temp = fused ? fused.temp : parseFloat(now.temp);
+  const wind = parseInt(now.windScale || 0, 10);
+  const aqi = air ? parseInt(air.aqi, 10) : null;
+  const tips = [];
+
+  // 安全优先（独占一句）
+  if (temp >= 35) return '🔥 高温预警，避免长时间户外活动';
+  if (temp <= -5) return '🥶 严寒天气，注意防寒保暖';
+  if (wind >= 7) return '💨 风力较大，注意高空坠物和出行安全';
+  if (aqi != null && aqi > 200) return '😷 空气污染严重，建议减少户外活动';
+
+  // 便利次之
+  if (precip && precip.maxRisk >= 60) tips.push('🌧 多源预报有雨，出门带伞');
+  else if (precip && precip.hasDisagreement) tips.push('🌂 降水预报有分歧，建议备伞');
+  else if (daily && parseInt(daily[0]?.pop || 0, 10) >= 50) tips.push('🌧 降水概率较高，出门带伞');
+
+  // 舒适最后
+  if (temp >= 30) tips.push('🥵 天气炎热，注意补水');
+  else if (temp <= 5) tips.push('🧥 天气较冷，穿厚外套');
+  else if (temp >= 18 && temp <= 26) tips.push('😊 温度舒适，适合户外');
+
+  // 分歧提示（占剩余位置）
+  if (fused && fused.confidence === 'low' && tips.length < 2) {
+    tips.push('⚠️ 多源预报存在分歧，实际天气可能有波动');
+  }
+
+  return tips.slice(0, 2).join(' · ') || '🌤 天气平稳，适合日常出行';
+}
+
+/* ================================================================
+   设置 / 城市 / 预警 / 数据获取（保持原样）
    ================================================================ */
 function loadSettings() {
-  state.apiKey  = localStorage.getItem(KEY_API)  || '';
+  state.apiKey = localStorage.getItem(KEY_API) || '';
   state.apiHost = localStorage.getItem(KEY_HOST) || '';
-  state.waKey   = localStorage.getItem(KEY_WA)   || '';
+  state.waKey = localStorage.getItem(KEY_WA) || '';
   try { const arr = JSON.parse(localStorage.getItem(KEY_CITIES) || '[]'); if (Array.isArray(arr)) state.cities = arr.filter(c => c && c.id); } catch {}
   const idx = parseInt(localStorage.getItem(KEY_ACTIVE) || '0', 10);
   state.activeIndex = Math.min(Math.max(idx, 0), Math.max(state.cities.length - 1, 0));
 }
 function saveCities() { localStorage.setItem(KEY_CITIES, JSON.stringify(state.cities)); localStorage.setItem(KEY_ACTIVE, String(state.activeIndex)); }
-
 async function saveSettings() {
   const key = document.getElementById('apiKeyInput').value.trim();
   const host = document.getElementById('apiHostInput').value.trim();
   const wa = document.getElementById('weatherApiKeyInput').value.trim();
   if (!key) { alert('请填写和风天气 API Key'); return; }
-
-  localStorage.setItem(KEY_API, key);
-  localStorage.setItem(KEY_HOST, host);
-  localStorage.setItem(KEY_WA, wa);
+  localStorage.setItem(KEY_API, key); localStorage.setItem(KEY_HOST, host); localStorage.setItem(KEY_WA, wa);
   state.apiKey = key; state.apiHost = host; state.waKey = wa;
-
-  // 如果填了 WeatherAPI，立即测试
   if (wa) {
     const r = await testWeatherAPI(wa);
-    if (r.ok) {
-      alert(`✅ WeatherAPI 已保存，测试成功\n返回温度：${r.temp}°C\n\n如果 weatherapi.com 后台没显示：\n· 统计通常有几小时延迟\n· 免费层只显示月度总数，无逐条日志\n· 确认看的是 weatherapi.com，不是和风控制台`);
-    } else {
-      alert(`⚠️ WeatherAPI Key 已保存，但测试失败\n原因：${r.error}\n\n请检查 Key 是否完整、账号是否已邮箱验证。`);
-    }
+    if (r.ok) alert(`✅ WeatherAPI 已保存，测试成功\n返回温度：${r.temp}°C`);
+    else alert(`⚠️ WeatherAPI 测试失败：${r.error}`);
   }
-
-  closeSettings();
-  updateApiStatusBar();
+  closeSettings(); updateApiStatusBar();
   state.cities.length ? loadWeather() : initLocation();
 }
-
 function openSettings() {
   document.getElementById('apiKeyInput').value = state.apiKey;
   document.getElementById('apiHostInput').value = state.apiHost;
@@ -647,11 +652,10 @@ function switchTab(name, updateHash = true) {
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   if (updateHash && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
-  const od = document.getElementById('apiDetailOverlay');
-  if (od && od.classList.contains('show')) toggleApiDetail();
+  const od = document.getElementById('apiDetailOverlay'); if (od?.classList.contains('show')) toggleApiDetail();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
-window.addEventListener('hashchange', () => { switchTab(location.hash.slice(1) || 'home', false); });
+window.addEventListener('hashchange', () => switchTab(location.hash.slice(1) || 'home', false));
 
 function openCityPanel() { renderCityList(); document.getElementById('cityBackdrop').classList.add('show'); document.getElementById('citySheet').classList.add('show'); document.getElementById('citySearchInput').value = ''; }
 function closeCityPanel() { document.getElementById('cityBackdrop').classList.remove('show'); document.getElementById('citySheet').classList.remove('show'); }
@@ -662,8 +666,7 @@ function renderCityList() {
   box.innerHTML = state.cities.map((c, i) => `<div class="cs-item ${i === state.activeIndex ? 'active' : ''}"><div class="cs-info"><div class="cs-name">${c.name}${i === state.activeIndex ? '<span class="cs-tag">当前</span>' : ''}</div><div class="cs-sub">${c.adm || ''}</div></div><button class="cs-del" title="删除">✕</button></div>`).join('');
   box.querySelectorAll('.cs-item').forEach((el, i) => {
     el.onclick = (e) => { if (e.target.closest('.cs-del')) return; switchCity(i); };
-    const del = el.querySelector('.cs-del');
-    if (del) del.onclick = (e) => { e.stopPropagation(); removeCity(i); };
+    const del = el.querySelector('.cs-del'); if (del) del.onclick = (e) => { e.stopPropagation(); removeCity(i); };
   });
 }
 let citySearchTimer = null;
@@ -701,17 +704,13 @@ function removeCity(i) {
   saveCities(); renderCityList(); loadWeather();
 }
 
-/* ================================================================
-   定位
-   ================================================================ */
 function initLocation() {
   if (!state.apiKey) { document.getElementById('homeContent').innerHTML = '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>'; openSettings(); return; }
   if (state.cities.length) { loadWeather(); return; }
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>正在定位…</div>';
   if (!navigator.geolocation) { fallbackBeijing(); return; }
   navigator.geolocation.getCurrentPosition(async pos => {
-    const lon = pos.coords.longitude.toFixed(2), lat = pos.coords.latitude.toFixed(2);
-    const { geo } = getHosts();
+    const lon = pos.coords.longitude.toFixed(2), lat = pos.coords.latitude.toFixed(2); const { geo } = getHosts();
     try {
       const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${lon},${lat}&number=1&lang=zh&key=${state.apiKey}`);
       if (data.code === '200' && data.location?.length) {
@@ -728,31 +727,22 @@ async function fallbackBeijing() {
     if (data.code === '200' && data.location?.length) {
       const l = data.location[0];
       addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat), adcode:l.adcode||'' });
-    } else {
-      document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>';
-    }
+    } else document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>';
   } catch (e) { document.getElementById('homeContent').innerHTML = `<div class="loading">加载失败：${e.message}</div>`; }
 }
 
-/* ================================================================
-   预警
-   ================================================================ */
 function formatWarningItem(a) {
-  const title = a.title || '气象预警';
-  const issuetime = a.issuetime || '';
+  const title = a.title || '气象预警'; const issuetime = a.issuetime || '';
   const detailUrl = a.alertid ? `https://www.nmc.cn/publish/alarm/${a.alertid}.html` : (a.url ? `https://www.nmc.cn${a.url}` : '');
   const regionMatch = title.match(/^(.+?(?:省|市|县|区|旗|盟))气象台/);
-  const region = regionMatch ? regionMatch[1] : '';
-  return { title, issuetime, detailUrl, region };
+  return { title, issuetime, detailUrl, region: regionMatch ? regionMatch[1] : '' };
 }
 async function loadLocalWarnings(city) {
-  const cityName = city.name.replace(/[市县区旗盟]$/, '').trim();
-  if (!cityName) return [];
+  const cityName = city.name.replace(/[市县区旗盟]$/, '').trim(); if (!cityName) return [];
   try {
     const res = await trackedFetch(`https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`, 'nmc');
     if (!res.ok) return [];
-    const data = await res.json();
-    const list = data?.data?.page?.list;
+    const data = await res.json(); const list = data?.data?.page?.list;
     if (!Array.isArray(list)) return [];
     return list.filter(a => (a.title || '').includes(cityName)).map(formatWarningItem);
   } catch { return []; }
@@ -761,67 +751,33 @@ async function loadNationwideWarnings() {
   try {
     const res = await trackedFetch(`https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=50&signaltype=&signallevel=&province=`, 'nmc');
     if (!res.ok) return [];
-    const data = await res.json();
-    const list = data?.data?.page?.list;
+    const data = await res.json(); const list = data?.data?.page?.list;
     if (!Array.isArray(list)) return [];
     return list.map(formatWarningItem);
   } catch { return []; }
 }
 
-/* ================================================================
-   多源温度
-   ================================================================ */
 async function fetchOpenMeteo(city) {
   if (!city.lon || !city.lat) return null;
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m&timezone=auto`;
-    const res = await trackedFetch(url, 'openmeteo');
-    if (!res.ok) return null;
-    const data = await res.json();
-    const t = data.current?.temperature_2m;
+    const res = await trackedFetch(url, 'openmeteo'); if (!res.ok) return null;
+    const data = await res.json(); const t = data.current?.temperature_2m;
     return t != null ? parseFloat(t) : null;
   } catch { return null; }
 }
-
-/* 详细版 fetchWeatherAPI */
-async function fetchWeatherAPI(city) {
-  if (!state.waKey) {
-    lastWaStatus = { status: '未配置 Key', time: nowStr(), ok: false };
-    return null;
-  }
-  if (!city.lat || !city.lon) {
-    lastWaStatus = { status: '城市缺少经纬度', time: nowStr(), ok: false };
-    return null;
-  }
+async function fetchWeatherApiFull(city) {
+  if (!state.waKey) { lastWaStatus = { status: '未配置 Key', time: nowStr(), ok: false }; return null; }
+  if (!city.lat || !city.lon) { lastWaStatus = { status: '城市缺少经纬度', time: nowStr(), ok: false }; return null; }
   try {
-    const url = `https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(state.waKey)}&q=${city.lat},${city.lon}`;
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${encodeURIComponent(state.waKey)}&q=${city.lat},${city.lon}&days=3&aqi=yes&alerts=yes&lang=zh`;
     const res = await trackedFetch(url, 'weatherapi');
-    if (!res.ok) {
-      lastWaStatus = { status: `HTTP ${res.status}`, time: nowStr(), ok: false };
-      return null;
-    }
+    if (!res.ok) { lastWaStatus = { status: `HTTP ${res.status}`, time: nowStr(), ok: false }; return null; }
     const data = await res.json();
-    if (data.error) {
-      lastWaStatus = { status: `错误：${data.error.message || '未知'}`, time: nowStr(), ok: false };
-      return null;
-    }
+    if (data.error) { lastWaStatus = { status: `错误：${data.error.message}`, time: nowStr(), ok: false }; return null; }
     lastWaStatus = { status: '成功', time: nowStr(), ok: true };
-    const t = data.current?.temp_c;
-    return t != null ? parseFloat(t) : null;
-  } catch (e) {
-    lastWaStatus = { status: `网络错误：${e.message}`, time: nowStr(), ok: false };
-    return null;
-  }
-}
-
-function calcConsensus(temps) {
-  const valid = temps.filter(t => typeof t === 'number' && !isNaN(t));
-  if (valid.length < 2) return null;
-  const mean = valid.reduce((a, b) => a + b, 0) / valid.length;
-  const variance = valid.reduce((s, t) => s + (t - mean) ** 2, 0) / valid.length;
-  const spread = Math.sqrt(variance);
-  const score = Math.max(0, Math.min(100, Math.round(100 - (spread / 3) * 100)));
-  return { score, spread: parseFloat(spread.toFixed(2)), count: valid.length };
+    return data;
+  } catch (e) { lastWaStatus = { status: `网络错误：${e.message}`, time: nowStr(), ok: false }; return null; }
 }
 
 async function fetchHistoricalMAE(city, days = 7) {
@@ -835,25 +791,17 @@ async function fetchHistoricalMAE(city, days = 7) {
       trackedFetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${city.lat}&longitude=${city.lon}&hourly=temperature_2m&start_date=${fmt(start)}&end_date=${fmt(end)}`, 'openmeteo'),
     ]);
     if (!prevRes.ok || !archRes.ok) return null;
-    const prevData = await prevRes.json();
-    const archData = await archRes.json();
-    const prev = prevData?.hourly?.temperature_2m_previous_day1 || [];
-    const actual = archData?.hourly?.temperature_2m || [];
+    const prevData = await prevRes.json(), archData = await archRes.json();
+    const prev = prevData?.hourly?.temperature_2m_previous_day1 || [], actual = archData?.hourly?.temperature_2m || [];
     if (!prev.length || prev.length !== actual.length) return null;
     let sum = 0, n = 0;
-    for (let i = 0; i < prev.length; i++) {
-      if (prev[i] != null && actual[i] != null) { sum += Math.abs(prev[i] - actual[i]); n++; }
-    }
+    for (let i = 0; i < prev.length; i++) if (prev[i] != null && actual[i] != null) { sum += Math.abs(prev[i] - actual[i]); n++; }
     if (!n) return null;
     const mae = sum / n;
-    const accuracy = Math.max(0, Math.min(100, Math.round(100 - mae * 7)));
-    return { mae: parseFloat(mae.toFixed(2)), accuracy, days: Math.round(n / 24) };
+    return { mae: parseFloat(mae.toFixed(2)), accuracy: Math.max(0, Math.min(100, Math.round(100 - mae * 7))), days: Math.round(n / 24) };
   } catch { return null; }
 }
 
-/* ================================================================
-   城市经纬度补全（关键修复）
-   ================================================================ */
 async function ensureCityCoords(city) {
   if (!city) return city;
   if (city.lon && city.lat && !isNaN(city.lon) && !isNaN(city.lat)) return city;
@@ -863,38 +811,31 @@ async function ensureCityCoords(city) {
     const res = await fetchJson(`${geo}/geo/v2/city/lookup?location=${city.id}&number=1&lang=zh&key=${state.apiKey}`);
     if (res.code === '200' && res.location?.length) {
       const l = res.location[0];
-      city.lon = parseFloat(l.lon);
-      city.lat = parseFloat(l.lat);
-      city.adcode = city.adcode || l.adcode || '';
-      state.cities[state.activeIndex] = city;
-      saveCities();
+      city.lon = parseFloat(l.lon); city.lat = parseFloat(l.lat); city.adcode = city.adcode || l.adcode || '';
+      state.cities[state.activeIndex] = city; saveCities();
     }
   } catch {}
   return city;
 }
 
 /* ================================================================
-   天气加载
+   天气加载（含融合分析）
    ================================================================ */
 async function loadWeather() {
   let city = getActiveCity();
   if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
-
-  // 关键：补齐经纬度
   city = await ensureCityCoords(city);
-
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
   const localWarningsPromise = loadLocalWarnings(city);
   const nationwideWarningsPromise = loadNationwideWarnings();
   const openMeteoPromise = fetchOpenMeteo(city);
-  const weatherApiPromise = fetchWeatherAPI(city);
+  const weatherApiFullPromise = fetchWeatherApiFull(city);
   const maePromise = fetchHistoricalMAE(city, 7);
 
   const { api } = getHosts(); const key = state.apiKey, loc = city.id;
   const coord = city.lon && city.lat ? `${city.lon},${city.lat}` : null;
-
   const tasks = [
     fetchJson(`${api}/v7/weather/now?location=${loc}&key=${key}`),
     fetchJson(`${api}/v7/weather/24h?location=${loc}&key=${key}`),
@@ -907,30 +848,32 @@ async function loadWeather() {
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
 
-  const [r, localWarnings, nationwideWarnings, omTemp, waTemp, mae] = await Promise.all([
-    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiPromise, maePromise
+  const [r, localWarnings, nationwideWarnings, omTemp, waFull, mae] = await Promise.all([
+    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiFullPromise, maePromise
   ]);
   if (seq !== loadSeq) return;
 
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
   const dailyData = r[2].status==='fulfilled' ? r[2].value : null;
-
   if (!nowData || nowData.code !== '200' || !dailyData || dailyData.code !== '200') {
     const code = nowData?.code || dailyData?.code || 'NETWORK';
     let msg = `加载失败（${code}）`;
-    if (code === '401' || code === '403') msg = 'API Key 无效或 Host 不正确，请检查设置';
+    if (code === '401' || code === '403') msg = 'API Key 无效或 Host 不正确';
     document.getElementById('homeContent').innerHTML = `<div class="loading">${msg}<br><button class="btn btn-ghost" style="max-width:160px;margin:12px auto 0" onclick="loadWeather()">重试</button></div>`;
     return;
   }
 
   const qwTemp = parseFloat(nowData.now.temp);
-  const temps = [qwTemp, omTemp, waTemp].filter(t => typeof t === 'number' && !isNaN(t));
-  const consensus = calcConsensus(temps);
+  const waTemp = waFull?.current?.temp_c != null ? parseFloat(waFull.current.temp_c) : null;
+  const sources = { qweather: qwTemp, openMeteo: omTemp, weatherApi: waTemp };
 
-  let overallAcc = null;
-  if (consensus && mae) overallAcc = Math.round(consensus.score * 0.4 + mae.accuracy * 0.6);
-  else if (consensus) overallAcc = consensus.score;
-  else if (mae) overallAcc = mae.accuracy;
+  // 融合分析
+  const fused = fuseTemperature(sources, mae);
+  const weatherVote = voteWeather(nowData.now.icon, waFull?.current?.condition?.text);
+  const precip = fusePrecipitation([
+    parseInt(dailyData.daily[0]?.pop || 0, 10),
+    waFull?.forecast?.forecastday?.[0]?.day?.daily_chance_of_rain ?? null,
+  ]);
 
   state.data = {
     city, now: nowData.now,
@@ -942,8 +885,8 @@ async function loadWeather() {
     minutely: r[5].status==='fulfilled' && r[5].value?.code==='200' ? r[5].value : null,
     sun: r[6].status==='fulfilled' && r[6].value?.code==='200' ? r[6].value.daily?.[0] : null,
     moon: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.moonPhase?.[0] : null,
-    sources: { qweather: qwTemp, openMeteo: omTemp, weatherApi: waTemp },
-    consensus, mae, overallAcc,
+    sources, consensus: fused, mae, weatherVote, precip,
+    weatherApiFull: waFull,
   };
   renderAll();
 }
@@ -961,7 +904,6 @@ function renderAll() {
   document.getElementById('indicesContent').innerHTML = buildIndicesPage(d.indices);
   document.getElementById('detailContent').innerHTML = buildDetailPage(d);
 }
-
 function setTheme(iconCode) {
   const c = String(iconCode); document.body.className = '';
   if (['150','151','153'].includes(c)) document.body.classList.add('theme-night');
@@ -971,18 +913,22 @@ function setTheme(iconCode) {
   else document.body.classList.add('theme-cloudy');
 }
 
+/* ================================================================
+   首页（含建议行）
+   ================================================================ */
 function buildHome(d) {
   const today = d.daily[0] || {};
   const hasRain = checkHasRain(d.minutely);
-  const localWarns = d.localWarnings || [];
+  const advice = buildAdvice(d.consensus, d.weatherVote, d.precip, d.now, d.daily, d.air);
   return `
-    ${buildWarningBanner(localWarns)}
+    ${buildWarningBanner(d.localWarnings)}
     <div class="hero">
       <div class="main-weather-icon">${iconHtml(d.now.icon)}</div>
       <div class="temp">${d.now.temp}<sup>°</sup></div>
       <div class="condition">${d.now.text}</div>
       <div class="feels-like">体感 ${d.now.feelsLike}° · ${today.fxDate || ''}</div>
       <div class="hi-lo"><span>最高 ${today.tempMax}°</span><span>最低 ${today.tempMin}°</span></div>
+      <div class="advice-line">${advice}</div>
     </div>
     ${hasRain ? buildRainBanner(d.minutely) : ''}
     ${buildHourly(d.hourly)}
@@ -990,48 +936,30 @@ function buildHome(d) {
     ${buildDaily(d.daily)}
   `;
 }
-
 function buildWarningBanner(alerts) {
   if (!alerts?.length) return '';
   const a = alerts[0];
   return `<div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-    <span class="w-icon">⚠</span><span class="w-title">${a.title}</span>
-    <span class="w-severity">${a.issuetime}</span>
-    <div class="warning-detail">
-      ${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
-      <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
-    </div>
+    <span class="w-icon">⚠</span><span class="w-title">${a.title}</span><span class="w-severity">${a.issuetime}</span>
+    <div class="warning-detail">${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看详情 ›</a></div>` : ''}<div style="margin-top:6px;font-size:11px;opacity:0.6">来源：中央气象台</div></div>
   </div>`;
 }
-
 function checkHasRain(m) {
   if (!m) return false;
   if (m.summary && (m.summary.includes('雨') || m.summary.includes('雪') || m.summary.includes('降水'))) return true;
   if (m.minutely && m.minutely.some(x => parseFloat(x.precip) > 0)) return true;
   return false;
 }
-function buildRainBanner(m) {
-  const summary = m.summary || '未来 2 小时有降水';
-  return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${summary}</span><span class="rb-arrow">›</span></div>`;
-}
-
+function buildRainBanner(m) { return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${m.summary || '未来 2 小时有降水'}</span><span class="rb-arrow">›</span></div>`; }
 function buildHourly(hourly) {
   if (!hourly?.length) return '';
   const items = hourly.slice(0, 24).map((h, i) => {
-    const t = new Date(h.fxTime);
-    const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
+    const t = new Date(h.fxTime); const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
     const pop = parseInt(h.pop, 10) || 0;
-    return `<div class="hour-item ${i === 0 ? 'now' : ''}">
-      <div class="h-time">${label}</div>
-      <div class="h-icon">${iconHtml(h.icon)}</div>
-      <div class="h-text">${h.text || ''}</div>
-      <div class="h-temp">${h.temp}°</div>
-      ${pop > 0 ? `<div class="h-pop">降水 ${pop}%</div><div class="h-pop-bar"><div style="width:${Math.min(pop,100)}%"></div></div>` : ''}
-    </div>`;
+    return `<div class="hour-item ${i === 0 ? 'now' : ''}"><div class="h-time">${label}</div><div class="h-icon">${iconHtml(h.icon)}</div><div class="h-text">${h.text || ''}</div><div class="h-temp">${h.temp}°</div>${pop > 0 ? `<div class="h-pop">降水 ${pop}%</div><div class="h-pop-bar"><div style="width:${Math.min(pop,100)}%"></div></div>` : ''}</div>`;
   }).join('');
   return `<div class="section-label">逐小时（未来 24 小时）</div><div class="hourly-card glass"><div class="hourly-scroll">${items}</div></div>`;
 }
-
 const UV_CN = v => { const n = parseInt(v, 10); if (isNaN(n)) return ''; return n <= 2 ? '弱' : n <= 4 ? '中等' : n <= 6 ? '强' : n <= 9 ? '很强' : '极强'; };
 function buildDaily(daily) {
   if (!daily?.length) return '';
@@ -1041,145 +969,110 @@ function buildDaily(daily) {
   const rows = daily.map((d, i) => {
     const lo = parseInt(d.tempMin, 10), hi = parseInt(d.tempMax, 10);
     const left = ((lo - gMin) / span) * 100, width = Math.max(((hi - lo) / span) * 100, 6);
-    const dt = new Date(d.fxDate + 'T00:00:00');
-    const label = i === 0 ? '今天' : W[dt.getDay()];
+    const dt = new Date(d.fxDate + 'T00:00:00'); const label = i === 0 ? '今天' : W[dt.getDay()];
     const meta = [];
     if (d.precip && parseFloat(d.precip) > 0) meta.push(`${d.precip}毫米`);
     if (d.uvIndex) meta.push(`UV ${UV_CN(d.uvIndex)}`);
-    return `<div class="day-row">
-      <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div>
-      <div class="day-icon">${iconHtml(d.iconDay)}</div>
-      <div class="day-text">${d.textDay || ''}</div>
-      <div class="day-rain">${meta.join('<br>')}</div>
-      <div class="day-bar-wrap"><span class="day-lo">${lo}°</span>
-        <div class="bar-track"><div class="bar-fill" style="left:${left}%;width:${width}%"></div></div>
-        <span class="day-hi">${hi}°</span></div>
-    </div>`;
+    return `<div class="day-row"><div class="day-name ${i === 0 ? 'today' : ''}">${label}</div><div class="day-icon">${iconHtml(d.iconDay)}</div><div class="day-text">${d.textDay || ''}</div><div class="day-rain">${meta.join('<br>')}</div><div class="day-bar-wrap"><span class="day-lo">${lo}°</span><div class="bar-track"><div class="bar-fill" style="left:${left}%;width:${width}%"></div></div><span class="day-hi">${hi}°</span></div></div>`;
   }).join('');
   return `<div class="daily-card glass">${rows}</div>`;
 }
 
+/* 降雨 / 预警 / 指数 保持原样 */
 function buildRainPage(m) {
-  if (!m || (!m.summary && !m.minutely?.length)) {
-    return `<div class="rain-empty"><div class="re-icon">☀️</div>当前无降水<br><span style="font-size:12px;opacity:0.6">未来 2 小时内暂无降水数据</span></div>`;
-  }
+  if (!m || (!m.summary && !m.minutely?.length)) return `<div class="rain-empty"><div class="re-icon">☀️</div>当前无降水<br><span style="font-size:12px;opacity:0.6">未来 2 小时内暂无降水数据</span></div>`;
   const summary = m.summary || '未来 2 小时降水情况';
   const max = Math.max(...m.minutely.map(y => parseFloat(y.precip) || 0), 0.1);
   const bars = m.minutely?.map((x, i) => {
-    const v = parseFloat(x.precip) || 0;
-    const h = v > 0 ? Math.max((v / max) * 100, 5) : 0;
-    const t = new Date(x.fxTime);
-    const label = i % 6 === 0 ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` : '';
+    const v = parseFloat(x.precip) || 0, h = v > 0 ? Math.max((v / max) * 100, 5) : 0;
+    const t = new Date(x.fxTime), label = i % 6 === 0 ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` : '';
     return `<div class="rain-bar-wrap"><div class="rain-bar" style="height:${h}%"></div>${label ? `<div class="rain-time">${label}</div>` : ''}</div>`;
   }).join('') || '';
-  return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div>
-    <div class="rain-chart-card glass">
-      <div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div>
-      <div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div>
-    </div>
-    <div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。</div>`;
+  return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div>`;
 }
-
 function buildWarningPage(d) {
-  const local = d.localWarnings || [];
-  const nationwide = d.nationwideWarnings || [];
+  const local = d.localWarnings || [], nationwide = d.nationwideWarnings || [];
   const list = warningViewMode === 'local' ? local : nationwide;
   const cityName = d.city.name;
-  const switchHtml = `<div class="warning-switch">
-    <div class="ws-btn ${warningViewMode === 'local' ? 'active' : ''}" onclick="switchWarningView('local')">当前地区 · ${cityName}</div>
-    <div class="ws-btn ${warningViewMode === 'nationwide' ? 'active' : ''}" onclick="switchWarningView('nationwide')">全国预警 (${nationwide.length})</div>
-  </div>`;
-  if (!list.length) {
-    const emptyMsg = warningViewMode === 'local'
-      ? `<div class="rain-empty"><div class="re-icon">✅</div>${cityName} 当前无生效预警<br><span style="font-size:12px;opacity:0.6">可切换到“全国预警”查看其他地区</span></div>`
-      : `<div class="rain-empty"><div class="re-icon">✅</div>全国当前无生效预警</div>`;
-    return switchHtml + emptyMsg;
-  }
+  const switchHtml = `<div class="warning-switch"><div class="ws-btn ${warningViewMode === 'local' ? 'active' : ''}" onclick="switchWarningView('local')">当前地区 · ${cityName}</div><div class="ws-btn ${warningViewMode === 'nationwide' ? 'active' : ''}" onclick="switchWarningView('nationwide')">全国预警 (${nationwide.length})</div></div>`;
+  if (!list.length) return switchHtml + (warningViewMode === 'local' ? `<div class="rain-empty"><div class="re-icon">✅</div>${cityName} 当前无生效预警</div>` : `<div class="rain-empty"><div class="re-icon">✅</div>全国当前无生效预警</div>`);
   const items = list.map(a => {
     const regionTag = warningViewMode === 'nationwide' && a.region ? `<div class="w-region">📍 ${a.region}</div>` : '';
-    return `<div class="warning-list-item">
-      <div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-        <span class="w-icon">⚠</span>
-        <div style="flex:1;min-width:0"><span class="w-title">${a.title}</span>${regionTag}</div>
-        <span class="w-severity">${a.issuetime}</span>
-        <div class="warning-detail">
-          ${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
-          <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
-        </div>
-      </div>
-    </div>`;
+    return `<div class="warning-list-item"><div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')"><span class="w-icon">⚠</span><div style="flex:1;min-width:0"><span class="w-title">${a.title}</span>${regionTag}</div><span class="w-severity">${a.issuetime}</span><div class="warning-detail">${a.detailUrl ? `<div><a href="${a.detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看详情 ›</a></div>` : ''}<div style="margin-top:6px;font-size:11px;opacity:0.6">来源：中央气象台</div></div></div></div>`;
   }).join('');
   return switchHtml + `<div class="section-label" style="margin-top:4px">${warningViewMode === 'local' ? `${cityName} 生效预警` : `全国生效预警（前 ${list.length} 条）`}</div>` + items;
 }
 function switchWarningView(mode) { if (warningViewMode === mode) return; warningViewMode = mode; const d = state.data; if (d) document.getElementById('warningContent').innerHTML = buildWarningPage(d); }
-
 function buildIndicesPage(indices) {
   if (!indices?.length) return `<div class="rain-empty"><div class="re-icon">📋</div>暂无生活指数数据</div>`;
   const cards = indices.map(x => `<div class="index-card glass"><div class="idx-type">${x.name || x.typeName}</div><div class="idx-category">${x.category}</div><div class="idx-text">${x.text || ''}</div></div>`).join('');
   return `<div class="section-label" style="margin-top:16px">生活指数（共 ${indices.length} 项）</div><div class="indices-grid">${cards}</div>`;
 }
 
+/* ================================================================
+   详情页（可信度 + 指标 + 天文 + WeatherAPI 补充）
+   ================================================================ */
 function buildDetailPage(d) {
   return `
-    ${buildAccuracyCard(d)}
+    ${buildConfidenceCard(d)}
     <div class="section-label" style="margin-top:16px">详细指标</div>
     ${buildMetrics(d.now, d.air)}
     ${buildAstro(d.sun, d.moon)}
+    ${buildWeatherApiSummary(d.weatherApiFull)}
   `;
 }
 
-function buildAccuracyCard(d) {
-  const acc = d.overallAcc;
-  if (acc == null) {
-    return `<div class="section-label">预报准确度</div>
-      <div class="acc-card glass">
-        <div class="acc-ring-wrap"><div class="acc-ring" style="--pct:0"><div class="acc-inner"><div class="acc-pct">—</div><div class="acc-label">暂不可算</div></div></div></div>
-        <div class="acc-note">需要多家数据源和历史数据才能计算准确度。当前数据源不足或请求失败。</div>
+// 结论优先的可信度卡片
+function buildConfidenceCard(d) {
+  const fused = d.consensus;
+  const mae = d.mae;
+  const vote = d.weatherVote;
+  const precip = d.precip;
+  const src = d.sources || {};
+
+  if (!fused && !mae) {
+    return `<div class="section-label">综合可信度</div>
+      <div class="conf-card glass">
+        <div style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.7;padding:16px 0">
+          数据源不足，暂无法判断可信度。<br>配置 WeatherAPI Key 可获得更多源交叉验证。
+        </div>
       </div>`;
   }
-  const level = acc >= 80 ? { cls: 'high', text: '高度可信' } : acc >= 60 ? { cls: 'mid', text: '较为可信' } : { cls: 'low', text: '存在波动' };
-  const c = d.consensus;
-  const m = d.mae;
-  const src = d.sources || {};
-  const srcRows = [
-    { name: '和风天气', temp: src.qweather, tag: '主数据源' },
-    { name: 'Open-Meteo', temp: src.openMeteo, tag: m ? `历史±${m.mae}°C` : 'ECMWF/GFS' },
-    { name: 'WeatherAPI', temp: src.weatherApi, tag: state.waKey ? (src.weatherApi != null ? '成功' : '未返回') : '未配置' },
-  ].filter(r => r.name === '和风天气' || r.temp != null || r.name === 'WeatherAPI');
 
-  return `<div class="section-label">预报准确度</div>
-    <div class="acc-card glass">
-      <div class="acc-ring-wrap">
-        <div class="acc-ring" style="--pct:${acc}">
-          <div class="acc-inner">
-            <div class="acc-pct">${acc}<sup>%</sup></div>
-            <div class="acc-label">综合准确度</div>
-            <div class="acc-level ${level.cls}">${level.text}</div>
-          </div>
+  const level = fused ? fused.confidence : 'mid';
+  const icon = level === 'high' ? '✅' : level === 'mid' ? '🟡' : '⚠️';
+  const headline = level === 'high' ? '多源预报一致，可信度高'
+    : level === 'mid' ? '多源预报基本一致，可信度中等'
+    : '多源预报存在分歧，建议关注临近预报';
+  const color = level === 'high' ? '#6bcf7f' : level === 'mid' ? '#ffd166' : '#ff6b6b';
+
+  const srcList = [
+    { name: '和风', temp: src.qweather },
+    { name: 'Open-Meteo', temp: src.openMeteo },
+    { name: 'WeatherAPI', temp: src.weatherApi },
+  ].filter(s => s.temp != null);
+
+  return `<div class="section-label">综合可信度</div>
+    <div class="conf-card glass">
+      <div class="conf-head">
+        <span class="conf-icon">${icon}</span>
+        <span class="conf-title" style="color:${color}">${headline}</span>
+      </div>
+      <div class="conf-temps">
+        ${srcList.map(s => `<div class="conf-temp-item"><div class="ct-val">${s.temp}°</div><div class="ct-name">${s.name}</div></div>`).join('')}
+      </div>
+      <div class="conf-meta">
+        ${fused ? `${fused.sourceCount} 个源 · 温度标准差 ${fused.spread}°` : ''}
+        ${mae ? ` · 历史误差 ±${mae.mae}°C（${mae.days} 天）` : ''}
+        ${vote && vote.total > 1 ? ` · 天气现象 ${vote.agreement}/${vote.total} 一致` : ''}
+      </div>
+      ${precip && precip.hasDisagreement ? `<div class="conf-warn">⚠️ 降水概率分歧较大（${precip.maxRisk}% vs ${precip.average}%），建议同时关注临近预报</div>` : ''}
+      <details class="conf-detail">
+        <summary>查看各源原始数据</summary>
+        <div class="conf-raw">
+          ${srcList.map(s => `<div class="conf-raw-row"><span>${s.name}</span><span>${s.temp}°</span></div>`).join('')}
         </div>
-      </div>
-      <div class="acc-breakdown">
-        <div class="acc-item">
-          <div class="ai-label">多源共识度</div>
-          <div class="ai-value">${c ? c.score + '%' : '—'}</div>
-          <div class="ai-note">${c ? c.count + ' 源 · 标准差 ' + c.spread + '°' : '数据不足'}</div>
-        </div>
-        <div class="acc-item">
-          <div class="ai-label">历史准确度</div>
-          <div class="ai-value">${m ? m.accuracy + '%' : '—'}</div>
-          <div class="ai-note">${m ? '过去 ' + m.days + ' 天 MAE ±' + m.mae + '°C' : '暂无数据'}</div>
-        </div>
-      </div>
-      <div class="acc-sources">
-        ${srcRows.map(r => `<div class="acc-src-row">
-          <span class="acc-src-name">${r.name}</span>
-          <span class="acc-src-temp">${r.temp != null ? r.temp + '°' : '—'}</span>
-          <span class="acc-src-tag">${r.tag}</span>
-        </div>`).join('')}
-      </div>
-      <div class="acc-note">
-        综合准确度 = 多源共识度 × 40% + 历史准确度 × 60%。共识度基于 ${c ? c.count : 0} 家数据源当前温度的标准差映射；历史准确度基于 Open-Meteo 提前 1 天预报与 ERA5 再分析在过去 ${m ? m.days : 0} 天的逐小时绝对误差。均为真实数据计算，非平台自报值。
-      </div>
+      </details>
     </div>`;
 }
 
@@ -1190,49 +1083,60 @@ function buildMetrics(now, air) {
   cards.push(metricCard('气压', `${now.pressure}<small>百帕</small>`, '海平面气压'));
   cards.push(metricCard('能见度', `${now.vis}<small>公里</small>`, '水平能见度'));
   if (air) {
-    const aqi = parseInt(air.aqi, 10) || 0;
-    const pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
+    const aqi = parseInt(air.aqi, 10) || 0, pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
     const AIR_CN = aqi <= 50 ? '优' : aqi <= 100 ? '良' : aqi <= 150 ? '轻度污染' : aqi <= 200 ? '中度污染' : aqi <= 300 ? '重度污染' : '严重污染';
     const POLL = { pm2p5:'PM2.5', pm10:'PM10', o3:'臭氧', no2:'二氧化氮', so2:'二氧化硫', co:'一氧化碳' };
-    cards.push(`<div class="metric-card glass" style="grid-column:span 2">
-      <div class="m-label">空气质量 · ${AIR_CN}</div>
-      <div class="m-value">${air.aqi}<small>AQI</small></div>
-      <div class="m-sub">首要污染物：${POLL[air.primary] || air.primary || '—'}</div>
-      <div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div>
-    </div>`);
+    cards.push(`<div class="metric-card glass" style="grid-column:span 2"><div class="m-label">空气质量 · ${AIR_CN}</div><div class="m-value">${air.aqi}<small>AQI</small></div><div class="m-sub">首要污染物：${POLL[air.primary] || air.primary || '—'}</div><div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div></div>`);
   }
   return `<div class="metrics-grid">${cards.join('')}</div>`;
 }
-
-function fmtTime(iso) {
-  if (!iso) return '—';
-  const m = String(iso).match(/T(\d{2}:\d{2})/);
-  return m ? m[1] : String(iso).slice(0, 5);
-}
+function fmtTime(iso) { if (!iso) return '—'; const m = String(iso).match(/T(\d{2}:\d{2})/); return m ? m[1] : String(iso).slice(0, 5); }
 function buildAstro(sun, moon) {
   if (!sun && !moon) return '';
   const items = [];
-  if (sun) {
-    items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`);
-    items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`);
-  }
-  if (moon) {
-    items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`);
-    items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`);
-  }
+  if (sun) { items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`); items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`); }
+  if (moon) { items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`); items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`); }
   return `<div class="section-label">天文</div><div class="astro-card glass">${items.join('')}</div>`;
 }
+function metricCard(label, value, sub) { return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`; }
 
-function metricCard(label, value, sub) {
-  return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`;
+// WeatherAPI 一句话结论 + 折叠详情
+function buildWeatherApiSummary(wa) {
+  if (!wa) return '';
+  const aqi = wa.current?.air_quality || {};
+  const usEpa = aqi['us-epa-index'];
+  const text = usEpa == null ? '空气质量数据暂缺'
+    : usEpa <= 50 ? '🌿 空气质量优，适合户外活动'
+    : usEpa <= 100 ? '🍃 空气质量良，敏感人群注意'
+    : usEpa <= 150 ? '😷 轻度污染，敏感人群减少户外'
+    : '⚠️ 空气质量较差，建议减少户外活动';
+
+  return `<div class="section-label" style="margin-top:18px">补充参考 · WeatherAPI</div>
+    <div class="wa-mini glass">
+      <div class="wa-mini-text">${text}</div>
+      <details class="wa-mini-detail">
+        <summary>查看 WeatherAPI 详细数据（六项污染物）</summary>
+        <div class="wa-mini-grid">
+          <div>PM2.5：${aqi.pm2_5?.toFixed(1) ?? '—'} μg/m³</div>
+          <div>PM10：${aqi.pm10?.toFixed(1) ?? '—'} μg/m³</div>
+          <div>O₃：${aqi.o3?.toFixed(1) ?? '—'} μg/m³</div>
+          <div>NO₂：${aqi.no2?.toFixed(1) ?? '—'} μg/m³</div>
+          <div>SO₂：${aqi.so2?.toFixed(1) ?? '—'} μg/m³</div>
+          <div>CO：${aqi.co?.toFixed(1) ?? '—'} μg/m³</div>
+        </div>
+        <div class="wa-mini-note">数据来自 WeatherAPI 免费计划（3 天预报 + 空气质量），作为和风天气主数据源的交叉验证参考。</div>
+      </details>
+    </div>`;
 }
 
+/* ================================================================
+   手势 & 初始化
+   ================================================================ */
 const viewsEl = document.getElementById('views');
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
 viewsEl.addEventListener('touchstart', e => {
   if (e.target.closest('.hourly-scroll, .indices-grid, .rain-chart, .cs-list')) return;
-  const t = e.touches[0];
-  swipeStartX = t.clientX; swipeStartY = t.clientY; swiping = true;
+  const t = e.touches[0]; swipeStartX = t.clientX; swipeStartY = t.clientY; swiping = true;
 }, { passive: true });
 viewsEl.addEventListener('touchend', e => {
   if (!swiping) return; swiping = false;
