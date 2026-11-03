@@ -52,7 +52,6 @@
     border-radius: var(--radius-card);
   }
 
-  /* 顶部栏 */
   .topbar {
     display: flex;
     align-items: center;
@@ -84,7 +83,6 @@
   }
   .icon-btn:active { background: rgba(255,255,255,0.22); }
 
-  /* 搜索面板 */
   .search-panel {
     position: absolute;
     top: 64px; left: 16px; right: 16px;
@@ -140,7 +138,18 @@
     margin-left: 8px;
   }
 
-  /* 当前天气 */
+  .warning-banner {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; margin-bottom: 12px;
+    border-radius: 14px;
+    background: rgba(255, 160, 80, 0.18);
+    border: 1px solid rgba(255, 160, 80, 0.35);
+    font-size: 13px;
+  }
+  .warning-banner .w-icon { font-size: 18px; }
+  .warning-banner .w-title { flex: 1; font-weight: 600; }
+  .warning-banner .w-severity { color: rgba(255,255,255,0.7); font-size: 11px; }
+
   .hero {
     text-align: center;
     padding: 32px 0 24px;
@@ -185,7 +194,6 @@
     padding: 0 4px 8px;
   }
 
-  /* 逐小时 */
   .hourly-card {
     padding: 16px 0 14px;
     margin-bottom: 18px;
@@ -228,8 +236,17 @@
     width: 18px; height: 2px; border-radius: 1px;
     background: #fff;
   }
+  .h-pop { font-size: 10px; color: #7ec8e3; margin-top: 2px; }
+  .h-pop-bar {
+    height: 2px; border-radius: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 2px 12px 0;
+  }
+  .h-pop-bar > div {
+    height: 100%; border-radius: 1px;
+    background: #7ec8e3;
+  }
 
-  /* 7 天预报 */
   .daily-card {
     padding: 6px 16px;
     margin-bottom: 18px;
@@ -255,11 +272,12 @@
     flex-shrink: 0;
   }
   .day-rain {
-    width: 38px;
-    font-size: 11px;
+    width: 58px;
+    font-size: 10px;
     color: var(--text-secondary);
     text-align: right;
     flex-shrink: 0;
+    line-height: 1.3;
   }
   .day-bar-wrap {
     flex: 1;
@@ -295,7 +313,20 @@
     opacity: 0.85;
   }
 
-  /* 指标网格 */
+  .indices-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .index-card {
+    flex: 1;
+    padding: 14px;
+    border-radius: 16px;
+  }
+  .idx-type { font-size: 11px; color: var(--text-secondary); }
+  .idx-category { font-size: 16px; font-weight: 600; margin: 4px 0; }
+  .idx-text { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
   .metrics-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -338,80 +369,6 @@
     background:#fff; border:1.5px solid rgba(0,0,0,0.25);
   }
 
-  /* 设置面板 */
-  .settings-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(6px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 24px;
-  }
-  .settings-overlay.show { display: flex; }
-  .settings-panel {
-    width: 100%;
-    max-width: 380px;
-    padding: 24px;
-    border-radius: 24px;
-    background: rgba(28,36,52,0.94);
-    backdrop-filter: blur(30px);
-    border: 1px solid rgba(255,255,255,0.12);
-  }
-  .settings-panel h3 {
-    font-size: 17px;
-    font-weight: 600;
-    margin-bottom: 6px;
-  }
-  .settings-panel .hint {
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin-bottom: 16px;
-  }
-  .settings-panel label {
-    display: block;
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-  }
-  .settings-panel input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.08);
-    color: #fff;
-    font-size: 14px;
-    font-family: var(--font-stack);
-    outline: none;
-    transition: border-color 0.2s;
-    margin-bottom: 14px;
-  }
-  .settings-panel input:focus { border-color: rgba(255,255,255,0.45); }
-  .settings-panel input::placeholder { color: rgba(255,255,255,0.3); }
-  .settings-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 6px;
-  }
-  .btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: var(--font-stack);
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .btn:active { opacity: 0.75; }
-  .btn-primary { background: #fff; color: #1a2a4a; }
-  .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
-
   .loading {
     text-align: center;
     padding: 80px 20px;
@@ -428,9 +385,20 @@
     margin: 0 auto 14px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .btn {
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-stack);
+    cursor: pointer;
+  }
+  .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
 
   @media (max-width: 380px) {
     .metrics-grid { grid-template-columns: 1fr; }
+    .indices-row { flex-direction: column; }
   }
 </style>
 </head>
@@ -439,12 +407,11 @@
 <div class="app">
   <div class="topbar">
     <div class="city" id="cityName" onclick="openSearch()">
-      选择城市 <small>点击搜索</small>
+      定位中… <small>点击搜索城市</small>
     </div>
-    <div class="icon-btn" onclick="openSettings()" title="设置">⚙</div>
+    <div class="icon-btn" onclick="initLocation()" title="重新定位">◎</div>
   </div>
 
-  <!-- 搜索面板 -->
   <div class="search-panel" id="searchPanel">
     <div class="search-bar glass">
       <input id="searchInput" placeholder="搜索城市，如 北京" autocomplete="off" oninput="onSearchInput()">
@@ -461,83 +428,26 @@
   </div>
 </div>
 
-<!-- 设置面板 -->
-<div class="settings-overlay" id="settingsOverlay">
-  <div class="settings-panel">
-    <h3>和风天气配置</h3>
-    <p class="hint">
-      前往 console.qweather.com 创建项目获取凭据。<br>
-      新注册用户请填写控制台中的「API Host」（如 xxx.re.qweatherapi.com）；老用户可留空。
-    </p>
-    <label>API Key</label>
-    <input type="text" id="apiKeyInput" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
-    <label>API Host（可选）</label>
-    <input type="text" id="apiHostInput" placeholder="默认 devapi.qweather.com" autocomplete="off" spellcheck="false">
-    <div class="settings-actions">
-      <button class="btn btn-ghost" onclick="closeSettings()">取消</button>
-      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ================================================================
-   状态与常量
+   ★ 替换为你的 Netlify 站点地址（不要带末尾斜杠）
    ================================================================ */
-const KEY_API  = 'qweather_api_key';
-const KEY_HOST = 'qweather_api_host';
+const NETLIFY_SITE = 'https://your-site.netlify.app';
+const API_BASE = `${NETLIFY_SITE}/.netlify/functions/weather?path=`;
 
 const state = {
-  apiKey: '',
-  apiHost: '',
   locationId: null,
   cityName: '',
 };
 
-/* ================================================================
-   凭据读写
-   ================================================================ */
-function loadSettings() {
-  state.apiKey  = localStorage.getItem(KEY_API)  || '';
-  state.apiHost = localStorage.getItem(KEY_HOST) || '';
+/* ---------------- 通用请求 ---------------- */
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-function saveSettings() {
-  const key  = document.getElementById('apiKeyInput').value.trim();
-  const host = document.getElementById('apiHostInput').value.trim();
-  if (!key) { alert('请填写 API Key'); return; }
-  localStorage.setItem(KEY_API, key);
-  localStorage.setItem(KEY_HOST, host);
-  state.apiKey = key;
-  state.apiHost = host;
-  closeSettings();
-  geolookup('北京', true);
-}
-
-function openSettings() {
-  document.getElementById('apiKeyInput').value  = state.apiKey;
-  document.getElementById('apiHostInput').value = state.apiHost;
-  document.getElementById('settingsOverlay').classList.add('show');
-}
-function closeSettings() {
-  document.getElementById('settingsOverlay').classList.remove('show');
-}
-
-/* ================================================================
-   主机地址解析（兼容新老用户）
-   ================================================================ */
-function getHosts() {
-  const custom = state.apiHost.trim();
-  if (custom) {
-    const h = custom.startsWith('http') ? custom.replace(/\/+$/, '') : `https://${custom.replace(/\/+$/, '')}`;
-    return { geo: h, api: h };
-  }
-  return { geo: 'https://geoapi.qweather.com', api: 'https://devapi.qweather.com' };
-}
-
-/* ================================================================
-   城市搜索
-   ================================================================ */
+/* ---------------- 城市搜索 ---------------- */
 let searchTimer = null;
 
 function openSearch() {
@@ -547,11 +457,9 @@ function openSearch() {
   input.value = '';
   setTimeout(() => input.focus(), 100);
 }
-
 function closeSearch() {
   document.getElementById('searchPanel').classList.remove('show');
 }
-
 function onSearchInput() {
   clearTimeout(searchTimer);
   const q = document.getElementById('searchInput').value.trim();
@@ -561,25 +469,19 @@ function onSearchInput() {
 }
 
 async function geolookup(name, silent) {
-  if (!state.apiKey) { openSettings(); return; }
-  const { geo } = getHosts();
   const results = document.getElementById('searchResults');
-
   if (!silent) {
     results.innerHTML = '<div class="search-item">搜索中…</div>';
     results.classList.add('show');
   }
-
   try {
-    const url = `${geo}/geo/v2/city/lookup?location=${encodeURIComponent(name)}&number=5&lang=zh&key=${state.apiKey}`;
-    const res = await fetch(url);
-    const data = await res.json();
-
+    const data = await fetchJson(
+      `${API_BASE}/geo/v2/city/lookup&location=${encodeURIComponent(name)}&number=5&lang=zh`
+    );
     if (data.code !== '200' || !data.location || !data.location.length) {
       if (!silent) results.innerHTML = '<div class="search-item">未找到城市</div>';
       return;
     }
-
     if (silent) {
       selectCity(data.location[0]);
     } else {
@@ -611,63 +513,87 @@ function selectCity(loc) {
   loadWeather();
 }
 
-/* ================================================================
-   天气加载
-   ================================================================ */
+/* ---------------- 定位 ---------------- */
+function initLocation() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '<div class="loading"><div class="spinner"></div>正在定位…</div>';
+
+  if (!navigator.geolocation) {
+    geolookup('北京', true);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const lon = pos.coords.longitude.toFixed(2);
+      const lat = pos.coords.latitude.toFixed(2);
+      try {
+        const data = await fetchJson(
+          `${API_BASE}/geo/v2/city/lookup&location=${lon},${lat}&number=1&lang=zh`
+        );
+        if (data.code === '200' && data.location?.length) {
+          selectCity(data.location[0]);
+        } else {
+          geolookup('北京', true);
+        }
+      } catch {
+        geolookup('北京', true);
+      }
+    },
+    () => geolookup('北京', true),
+    { timeout: 6000, maximumAge: 600000 }
+  );
+}
+
+/* ---------------- 天气加载 ---------------- */
 async function loadWeather() {
   const main = document.getElementById('mainContent');
   main.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
-  if (!state.locationId) {
-    main.innerHTML = '<div class="loading">请先搜索并选择城市</div>';
+  const loc = state.locationId;
+  if (!loc) {
+    main.innerHTML = '<div class="loading">请先搜索并选择一个城市</div>';
     return;
   }
 
-  const { api } = getHosts();
-  const loc = state.locationId;
-  const key = state.apiKey;
+  const results = await Promise.allSettled([
+    fetchJson(`${API_BASE}/v7/weather/now&location=${loc}`),
+    fetchJson(`${API_BASE}/v7/weather/24h&location=${loc}`),
+    fetchJson(`${API_BASE}/v7/weather/7d&location=${loc}`),
+    fetchJson(`${API_BASE}/v7/air/now&location=${loc}`),
+    fetchJson(`${API_BASE}/v7/warning/now&location=${loc}`),
+    fetchJson(`${API_BASE}/v7/indices/1d&location=${loc}&type=3,5,1`),
+  ]);
 
-  try {
-    const [nowRes, hourlyRes, dailyRes, airRes] = await Promise.all([
-      fetch(`${api}/v7/weather/now?location=${loc}&key=${key}`),
-      fetch(`${api}/v7/weather/24h?location=${loc}&key=${key}`),
-      fetch(`${api}/v7/weather/7d?location=${loc}&key=${key}`),
-      fetch(`${api}/v7/air/now?location=${loc}&key=${key}`).catch(() => null),
-    ]);
+  const [nowR, hourlyR, dailyR, airR, warnR, idxR] = results;
+  const nowData = nowR.status === 'fulfilled' ? nowR.value : null;
+  const dailyData = dailyR.status === 'fulfilled' ? dailyR.value : null;
 
-    const nowData    = await nowRes.json();
-    const hourlyData = await hourlyRes.json();
-    const dailyData  = await dailyRes.json();
-    const airData    = airRes ? await airRes.json() : null;
-
-    if (nowData.code !== '200' || dailyData.code !== '200') {
-      const code = nowData.code || dailyData.code;
-      throw new Error(code === '401' || code === '403'
-        ? 'API Key 无效或无权限，请检查设置'
-        : `接口返回异常（${code}）`);
-    }
-
-    const hourly = hourlyData.code === '200' ? hourlyData.hourly : [];
-    const air    = airData && airData.code === '200' ? airData.now : null;
-
-    render(nowData.now, hourly, dailyData.daily, air);
-  } catch (e) {
-    main.innerHTML = `<div class="loading">加载失败：${e.message}<br><br>
-      <button class="btn btn-ghost" style="max-width:160px;margin:0 auto" onclick="loadWeather()">重试</button>
+  if (!nowData || nowData.code !== '200' || !dailyData || dailyData.code !== '200') {
+    const code = nowData?.code || dailyData?.code || 'NETWORK';
+    main.innerHTML = `<div class="loading">加载失败（${code}）<br>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="loadWeather()">重试</button>
     </div>`;
+    return;
   }
+
+  const hourly = hourlyR.status === 'fulfilled' && hourlyR.value.code === '200' ? hourlyR.value.hourly : [];
+  const air    = airR.status === 'fulfilled' && airR.value.code === '200' ? airR.value.now : null;
+  const warning = warnR.status === 'fulfilled' && warnR.value.code === '200' ? warnR.value.warning : [];
+  const indices = idxR.status === 'fulfilled' && idxR.value.code === '200' ? idxR.value.daily : [];
+
+  render(nowData.now, hourly, dailyData.daily, air, warning, indices);
 }
 
-/* ================================================================
-   渲染
-   ================================================================ */
-function render(now, hourly, daily, air) {
+/* ---------------- 渲染 ---------------- */
+function render(now, hourly, daily, air, warning, indices) {
   setTheme(now.icon);
 
   const today = daily[0] || {};
   document.getElementById('cityName').innerHTML =
     `${state.cityName} <small>${today.fxDate || ''}</small>`;
 
+  const warningHTML = buildWarning(warning);
   const heroHTML = `
     <div class="hero">
       <div class="temp">${now.temp}<sup>°</sup></div>
@@ -679,14 +605,15 @@ function render(now, hourly, daily, air) {
       </div>
     </div>
   `;
-
   const hourlyHTML  = buildHourly(hourly);
   const dailyHTML   = buildDaily(daily);
+  const indicesHTML = buildIndices(indices);
   const metricsHTML = buildMetrics(now, air);
 
   document.getElementById('mainContent').innerHTML =
-    heroHTML + hourlyHTML +
+    warningHTML + heroHTML + hourlyHTML +
     '<div class="section-label">7 天预报</div>' + dailyHTML +
+    indicesHTML +
     '<div class="section-label" style="margin-top:18px">详细指标</div>' + metricsHTML;
 }
 
@@ -707,16 +634,35 @@ function setTheme(iconCode) {
   }
 }
 
+function buildWarning(warning) {
+  if (!warning || !warning.length) return '';
+  const w = warning[0];
+  const sev = [w.severity, w.severityColor].filter(Boolean).join(' · ');
+  return `
+    <div class="warning-banner">
+      <span class="w-icon">⚠</span>
+      <span class="w-title">${w.title || w.typeName || '气象预警'}</span>
+      <span class="w-severity">${sev}</span>
+    </div>
+  `;
+}
+
 function buildHourly(hourly) {
   if (!hourly || !hourly.length) return '';
   const items = hourly.slice(0, 24).map((h, i) => {
     const t = new Date(h.fxTime);
     const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
+    const pop = parseInt(h.pop, 10) || 0;
+    const popHTML = pop > 0 ? `
+      <div class="h-pop">${pop}%</div>
+      <div class="h-pop-bar"><div style="width:${Math.min(pop, 100)}%"></div></div>
+    ` : '';
     return `
       <div class="hour-item ${i === 0 ? 'now' : ''}">
         <div class="h-time">${label}</div>
-        <div class="h-icon"><i class="qi-${iconToClass(h.icon)}"></i></div>
+        <div class="h-icon"><i class="qi-${h.icon}"></i></div>
         <div class="h-temp">${h.temp}°</div>
+        ${popHTML}
       </div>
     `;
   }).join('');
@@ -746,13 +692,16 @@ function buildDaily(daily) {
     const widthPct = Math.max(((hi - lo) / span) * 100, 6);
     const date = new Date(d.fxDate + 'T00:00:00');
     const label = i === 0 ? '今天' : weekNames[date.getDay()];
-    const pop = d.pop && d.pop !== '0' ? `${d.pop}%` : '';
+
+    const meta = [];
+    if (d.precip && d.precip !== '0.0') meta.push(`${d.precip}mm`);
+    if (d.uvIndex) meta.push(`UV ${d.uvIndex}`);
 
     return `
       <div class="day-row">
         <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div>
-        <div class="day-icon"><i class="qi-${iconToClass(d.iconDay)}"></i></div>
-        <div class="day-rain">${pop}</div>
+        <div class="day-icon"><i class="qi-${d.iconDay}"></i></div>
+        <div class="day-rain">${meta.join('<br>')}</div>
         <div class="day-bar-wrap">
           <span class="day-lo">${lo}°</span>
           <div class="bar-track">
@@ -765,6 +714,18 @@ function buildDaily(daily) {
   }).join('');
 
   return `<div class="daily-card glass">${rows}</div>`;
+}
+
+function buildIndices(indices) {
+  if (!indices || !indices.length) return '';
+  const cards = indices.map(d => `
+    <div class="index-card glass">
+      <div class="idx-type">${d.typeName}</div>
+      <div class="idx-category">${d.category}</div>
+      <div class="idx-text">${d.text || ''}</div>
+    </div>
+  `).join('');
+  return `<div class="section-label">生活指数</div><div class="indices-row">${cards}</div>`;
 }
 
 function buildMetrics(now, air) {
@@ -801,28 +762,8 @@ function metricCard(label, value, sub) {
   `;
 }
 
-function iconToClass(code) {
-  return String(code);
-}
-
-/* ================================================================
-   初始化
-   ================================================================ */
-(function init() {
-  loadSettings();
-
-  if (!state.apiKey) {
-    document.getElementById('mainContent').innerHTML =
-      '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>';
-    openSettings();
-  } else {
-    geolookup('北京', true);
-  }
-})();
-
-document.getElementById('settingsOverlay').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeSettings();
-});
+/* ---------------- 初始化 ---------------- */
+initLocation();
 </script>
 </body>
 </html>
