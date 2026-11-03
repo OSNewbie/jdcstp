@@ -72,7 +72,8 @@
   .hero .feels-like { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
   .hero .hi-lo { display: inline-flex; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
 
-  /* 一句话建议 */
+  .timezone-note { margin-top: 8px; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.3px; }
+
   .advice-line { margin: 14px auto 0; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); display: inline-block; max-width: 92%; }
 
   .rain-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 16px; border-radius: 16px; background: rgba(126,200,227,0.15); border: 1px solid rgba(126,200,227,0.35); cursor: pointer; transition: transform 0.15s; }
@@ -142,7 +143,6 @@
   .astro-item .a-value { font-size: 15px; font-weight: 600; }
   .astro-item .a-sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
-  /* 可信度卡片（结论优先） */
   .conf-card { padding: 20px 16px; margin-bottom: 18px; }
   .conf-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
   .conf-icon { font-size: 24px; line-height: 1; flex-shrink: 0; }
@@ -159,7 +159,6 @@
   .conf-raw-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; color: var(--text-secondary); }
   .conf-raw-row span:last-child { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
 
-  /* WeatherAPI 补充结论 */
   .wa-mini { padding: 16px; margin-bottom: 18px; }
   .wa-mini-text { font-size: 14px; font-weight: 500; line-height: 1.6; margin-bottom: 10px; }
   .wa-mini-detail summary { font-size: 11px; color: var(--text-secondary); cursor: pointer; user-select: none; outline: none; }
@@ -347,7 +346,38 @@ function nowStr() {
 }
 
 /* ================================================================
-   API 统计（与之前一致）
+   时间校正工具（核心修复）
+   ================================================================ */
+
+// 从和风返回的 ISO 字符串直接提取目标城市当地时间，不做时区转换
+function parseCityTime(fxTime) {
+  const m = String(fxTime || '').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return {
+    year: +m[1], month: +m[2], day: +m[3],
+    hour: +m[4], minute: +m[5],
+    hourDisplay: `${m[4]}:00`,
+    timeDisplay: `${m[4]}:${m[5]}`,
+  };
+}
+
+// 从时间字符串末尾提取时区偏移，如 +08:00 → UTC+08:00
+function getCityUtcOffset(fxTime) {
+  const m = String(fxTime || '').match(/([+-])(\d{2}):?(\d{2})$/);
+  if (!m) return null;
+  return `UTC${m[1]}${m[2]}:${m[3]}`;
+}
+
+// 用 UTC 计算星期几，避免浏览器时区影响
+function getDayOfWeek(fxDate) {
+  const m = String(fxDate || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return ['周日','周一','周二','周三','周四','周五','周六'][d.getUTCDay()];
+}
+
+/* ================================================================
+   API 统计
    ================================================================ */
 function getMonthKey() {
   const d = new Date();
@@ -506,10 +536,8 @@ function weatherEmoji(code) {
 function iconHtml(code) { return `<span class="weather-emoji">${weatherEmoji(code)}</span>`; }
 
 /* ================================================================
-   多源融合分析（核心新增）
+   多源融合分析
    ================================================================ */
-
-// 融合温度：加权平均 + 动态权重 + 分歧度计算
 function fuseTemperature(sources, mae) {
   let wQw = 0.6, wOm = 0.2, wWa = 0.2;
   if (mae) {
@@ -520,25 +548,15 @@ function fuseTemperature(sources, mae) {
   if (typeof sources.qweather === 'number' && !isNaN(sources.qweather)) items.push({ t: sources.qweather, w: wQw });
   if (typeof sources.openMeteo === 'number' && !isNaN(sources.openMeteo)) items.push({ t: sources.openMeteo, w: wOm });
   if (typeof sources.weatherApi === 'number' && !isNaN(sources.weatherApi)) items.push({ t: sources.weatherApi, w: wWa });
-
   if (items.length < 2) return null;
-
   const totalW = items.reduce((s, x) => s + x.w, 0);
   const fusedTemp = items.reduce((s, x) => s + x.t * x.w, 0) / totalW;
   const values = items.map(x => x.t);
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance = values.reduce((s, t) => s + (t - mean) ** 2, 0) / values.length;
   const spread = Math.sqrt(variance);
-
-  return {
-    temp: Math.round(fusedTemp * 10) / 10,
-    spread: parseFloat(spread.toFixed(1)),
-    confidence: spread < 1 ? 'high' : spread < 2 ? 'mid' : 'low',
-    sourceCount: items.length,
-  };
+  return { temp: Math.round(fusedTemp * 10) / 10, spread: parseFloat(spread.toFixed(1)), confidence: spread < 1 ? 'high' : spread < 2 ? 'mid' : 'low', sourceCount: items.length };
 }
-
-// 天气现象投票
 function voteWeather(qwIcon, waText) {
   const cat = (code) => {
     const c = String(code || '');
@@ -557,55 +575,34 @@ function voteWeather(qwIcon, waText) {
   const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
   return { category: top?.[0] || '未知', agreement: top?.[1] || 0, total: votes.length };
 }
-
-// 降水融合（最大值作为风险提示）
 function fusePrecipitation(pops) {
   const valid = pops.filter(p => typeof p === 'number' && !isNaN(p));
   if (!valid.length) return null;
   const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
-  const max = Math.max(...valid);
-  const min = Math.min(...valid);
-  return {
-    average: Math.round(avg),
-    maxRisk: max,
-    hasDisagreement: (max - min) > 30,
-    spread: max - min,
-  };
+  const max = Math.max(...valid), min = Math.min(...valid);
+  return { average: Math.round(avg), maxRisk: max, hasDisagreement: (max - min) > 30, spread: max - min };
 }
-
-// 一句话生活建议（安全 > 便利 > 舒适）
 function buildAdvice(fused, weatherVote, precip, now, daily, air) {
   const temp = fused ? fused.temp : parseFloat(now.temp);
   const wind = parseInt(now.windScale || 0, 10);
   const aqi = air ? parseInt(air.aqi, 10) : null;
   const tips = [];
-
-  // 安全优先（独占一句）
   if (temp >= 35) return '🔥 高温预警，避免长时间户外活动';
   if (temp <= -5) return '🥶 严寒天气，注意防寒保暖';
   if (wind >= 7) return '💨 风力较大，注意高空坠物和出行安全';
   if (aqi != null && aqi > 200) return '😷 空气污染严重，建议减少户外活动';
-
-  // 便利次之
   if (precip && precip.maxRisk >= 60) tips.push('🌧 多源预报有雨，出门带伞');
   else if (precip && precip.hasDisagreement) tips.push('🌂 降水预报有分歧，建议备伞');
   else if (daily && parseInt(daily[0]?.pop || 0, 10) >= 50) tips.push('🌧 降水概率较高，出门带伞');
-
-  // 舒适最后
   if (temp >= 30) tips.push('🥵 天气炎热，注意补水');
   else if (temp <= 5) tips.push('🧥 天气较冷，穿厚外套');
   else if (temp >= 18 && temp <= 26) tips.push('😊 温度舒适，适合户外');
-
-  // 分歧提示（占剩余位置）
-  if (fused && fused.confidence === 'low' && tips.length < 2) {
-    tips.push('⚠️ 多源预报存在分歧，实际天气可能有波动');
-  }
-
+  if (fused && fused.confidence === 'low' && tips.length < 2) tips.push('⚠️ 多源预报存在分歧，实际天气可能有波动');
   return tips.slice(0, 2).join(' · ') || '🌤 天气平稳，适合日常出行';
 }
 
 /* ================================================================
-   设置 / 城市 / 预警 / 数据获取（保持原样）
+   设置 / 城市 / 预警 / 数据获取
    ================================================================ */
 function loadSettings() {
   state.apiKey = localStorage.getItem(KEY_API) || '';
@@ -779,7 +776,6 @@ async function fetchWeatherApiFull(city) {
     return data;
   } catch (e) { lastWaStatus = { status: `网络错误：${e.message}`, time: nowStr(), ok: false }; return null; }
 }
-
 async function fetchHistoricalMAE(city, days = 7) {
   if (!city.lon || !city.lat) return null;
   const end = new Date(); end.setDate(end.getDate() - 2);
@@ -801,7 +797,6 @@ async function fetchHistoricalMAE(city, days = 7) {
     return { mae: parseFloat(mae.toFixed(2)), accuracy: Math.max(0, Math.min(100, Math.round(100 - mae * 7))), days: Math.round(n / 24) };
   } catch { return null; }
 }
-
 async function ensureCityCoords(city) {
   if (!city) return city;
   if (city.lon && city.lat && !isNaN(city.lon) && !isNaN(city.lat)) return city;
@@ -819,7 +814,7 @@ async function ensureCityCoords(city) {
 }
 
 /* ================================================================
-   天气加载（含融合分析）
+   天气加载（时间校正版本）
    ================================================================ */
 async function loadWeather() {
   let city = getActiveCity();
@@ -867,13 +862,17 @@ async function loadWeather() {
   const waTemp = waFull?.current?.temp_c != null ? parseFloat(waFull.current.temp_c) : null;
   const sources = { qweather: qwTemp, openMeteo: omTemp, weatherApi: waTemp };
 
-  // 融合分析
   const fused = fuseTemperature(sources, mae);
   const weatherVote = voteWeather(nowData.now.icon, waFull?.current?.condition?.text);
   const precip = fusePrecipitation([
     parseInt(dailyData.daily[0]?.pop || 0, 10),
     waFull?.forecast?.forecastday?.[0]?.day?.daily_chance_of_rain ?? null,
   ]);
+
+  // 时间校正：从 obsTime 提取城市当地时间
+  const obsTime = nowData.now.obsTime || '';
+  const cityNow = parseCityTime(obsTime)?.timeDisplay || '';
+  const utcOffset = getCityUtcOffset(obsTime) || '';
 
   state.data = {
     city, now: nowData.now,
@@ -887,6 +886,7 @@ async function loadWeather() {
     moon: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.moonPhase?.[0] : null,
     sources, consensus: fused, mae, weatherVote, precip,
     weatherApiFull: waFull,
+    cityNow, utcOffset,
   };
   renderAll();
 }
@@ -913,13 +913,14 @@ function setTheme(iconCode) {
   else document.body.classList.add('theme-cloudy');
 }
 
-/* ================================================================
-   首页（含建议行）
-   ================================================================ */
+/* 首页：Hero 下方新增时区说明 */
 function buildHome(d) {
   const today = d.daily[0] || {};
   const hasRain = checkHasRain(d.minutely);
   const advice = buildAdvice(d.consensus, d.weatherVote, d.precip, d.now, d.daily, d.air);
+  const tzLine = d.cityNow
+    ? `<div class="timezone-note">🕐 ${d.city.name} 当地时间 ${d.cityNow}${d.utcOffset ? '（' + d.utcOffset + '）' : ''}</div>`
+    : '';
   return `
     ${buildWarningBanner(d.localWarnings)}
     <div class="hero">
@@ -928,6 +929,7 @@ function buildHome(d) {
       <div class="condition">${d.now.text}</div>
       <div class="feels-like">体感 ${d.now.feelsLike}° · ${today.fxDate || ''}</div>
       <div class="hi-lo"><span>最高 ${today.tempMax}°</span><span>最低 ${today.tempMin}°</span></div>
+      ${tzLine}
       <div class="advice-line">${advice}</div>
     </div>
     ${hasRain ? buildRainBanner(d.minutely) : ''}
@@ -951,25 +953,30 @@ function checkHasRain(m) {
   return false;
 }
 function buildRainBanner(m) { return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${m.summary || '未来 2 小时有降水'}</span><span class="rb-arrow">›</span></div>`; }
+
+/* 逐小时：时间校正 */
 function buildHourly(hourly) {
   if (!hourly?.length) return '';
   const items = hourly.slice(0, 24).map((h, i) => {
-    const t = new Date(h.fxTime); const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
+    const ct = parseCityTime(h.fxTime);
+    const label = i === 0 ? '现在' : (ct ? ct.hourDisplay : '');
     const pop = parseInt(h.pop, 10) || 0;
     return `<div class="hour-item ${i === 0 ? 'now' : ''}"><div class="h-time">${label}</div><div class="h-icon">${iconHtml(h.icon)}</div><div class="h-text">${h.text || ''}</div><div class="h-temp">${h.temp}°</div>${pop > 0 ? `<div class="h-pop">降水 ${pop}%</div><div class="h-pop-bar"><div style="width:${Math.min(pop,100)}%"></div></div>` : ''}</div>`;
   }).join('');
-  return `<div class="section-label">逐小时（未来 24 小时）</div><div class="hourly-card glass"><div class="hourly-scroll">${items}</div></div>`;
+  return `<div class="section-label">逐小时（未来 24 小时 · ${state.data?.city?.name || ''}当地时间）</div><div class="hourly-card glass"><div class="hourly-scroll">${items}</div></div>`;
 }
+
 const UV_CN = v => { const n = parseInt(v, 10); if (isNaN(n)) return ''; return n <= 2 ? '弱' : n <= 4 ? '中等' : n <= 6 ? '强' : n <= 9 ? '很强' : '极强'; };
+
+/* 7 天预报：星期校正 */
 function buildDaily(daily) {
   if (!daily?.length) return '';
   const lows = daily.map(d => parseInt(d.tempMin, 10)), highs = daily.map(d => parseInt(d.tempMax, 10));
   const gMin = Math.min(...lows), gMax = Math.max(...highs), span = Math.max(gMax - gMin, 1);
-  const W = ['周日','周一','周二','周三','周四','周五','周六'];
   const rows = daily.map((d, i) => {
     const lo = parseInt(d.tempMin, 10), hi = parseInt(d.tempMax, 10);
     const left = ((lo - gMin) / span) * 100, width = Math.max(((hi - lo) / span) * 100, 6);
-    const dt = new Date(d.fxDate + 'T00:00:00'); const label = i === 0 ? '今天' : W[dt.getDay()];
+    const label = i === 0 ? '今天' : getDayOfWeek(d.fxDate);
     const meta = [];
     if (d.precip && parseFloat(d.precip) > 0) meta.push(`${d.precip}毫米`);
     if (d.uvIndex) meta.push(`UV ${UV_CN(d.uvIndex)}`);
@@ -978,18 +985,20 @@ function buildDaily(daily) {
   return `<div class="daily-card glass">${rows}</div>`;
 }
 
-/* 降雨 / 预警 / 指数 保持原样 */
+/* 降雨页：时间校正 */
 function buildRainPage(m) {
   if (!m || (!m.summary && !m.minutely?.length)) return `<div class="rain-empty"><div class="re-icon">☀️</div>当前无降水<br><span style="font-size:12px;opacity:0.6">未来 2 小时内暂无降水数据</span></div>`;
   const summary = m.summary || '未来 2 小时降水情况';
   const max = Math.max(...m.minutely.map(y => parseFloat(y.precip) || 0), 0.1);
   const bars = m.minutely?.map((x, i) => {
     const v = parseFloat(x.precip) || 0, h = v > 0 ? Math.max((v / max) * 100, 5) : 0;
-    const t = new Date(x.fxTime), label = i % 6 === 0 ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` : '';
+    const ct = parseCityTime(x.fxTime);
+    const label = i % 6 === 0 && ct ? ct.timeDisplay : '';
     return `<div class="rain-bar-wrap"><div class="rain-bar" style="height:${h}%"></div>${label ? `<div class="rain-time">${label}</div>` : ''}</div>`;
   }).join('') || '';
-  return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div>`;
+  return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时 · ${state.data?.city?.name || ''}当地时间</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div>`;
 }
+
 function buildWarningPage(d) {
   const local = d.localWarnings || [], nationwide = d.nationwideWarnings || [];
   const list = warningViewMode === 'local' ? local : nationwide;
@@ -1009,9 +1018,6 @@ function buildIndicesPage(indices) {
   return `<div class="section-label" style="margin-top:16px">生活指数（共 ${indices.length} 项）</div><div class="indices-grid">${cards}</div>`;
 }
 
-/* ================================================================
-   详情页（可信度 + 指标 + 天文 + WeatherAPI 补充）
-   ================================================================ */
 function buildDetailPage(d) {
   return `
     ${buildConfidenceCard(d)}
@@ -1022,14 +1028,8 @@ function buildDetailPage(d) {
   `;
 }
 
-// 结论优先的可信度卡片
 function buildConfidenceCard(d) {
-  const fused = d.consensus;
-  const mae = d.mae;
-  const vote = d.weatherVote;
-  const precip = d.precip;
-  const src = d.sources || {};
-
+  const fused = d.consensus, mae = d.mae, vote = d.weatherVote, precip = d.precip, src = d.sources || {};
   if (!fused && !mae) {
     return `<div class="section-label">综合可信度</div>
       <div class="conf-card glass">
@@ -1038,29 +1038,21 @@ function buildConfidenceCard(d) {
         </div>
       </div>`;
   }
-
   const level = fused ? fused.confidence : 'mid';
   const icon = level === 'high' ? '✅' : level === 'mid' ? '🟡' : '⚠️';
   const headline = level === 'high' ? '多源预报一致，可信度高'
     : level === 'mid' ? '多源预报基本一致，可信度中等'
     : '多源预报存在分歧，建议关注临近预报';
   const color = level === 'high' ? '#6bcf7f' : level === 'mid' ? '#ffd166' : '#ff6b6b';
-
   const srcList = [
     { name: '和风', temp: src.qweather },
     { name: 'Open-Meteo', temp: src.openMeteo },
     { name: 'WeatherAPI', temp: src.weatherApi },
   ].filter(s => s.temp != null);
-
   return `<div class="section-label">综合可信度</div>
     <div class="conf-card glass">
-      <div class="conf-head">
-        <span class="conf-icon">${icon}</span>
-        <span class="conf-title" style="color:${color}">${headline}</span>
-      </div>
-      <div class="conf-temps">
-        ${srcList.map(s => `<div class="conf-temp-item"><div class="ct-val">${s.temp}°</div><div class="ct-name">${s.name}</div></div>`).join('')}
-      </div>
+      <div class="conf-head"><span class="conf-icon">${icon}</span><span class="conf-title" style="color:${color}">${headline}</span></div>
+      <div class="conf-temps">${srcList.map(s => `<div class="conf-temp-item"><div class="ct-val">${s.temp}°</div><div class="ct-name">${s.name}</div></div>`).join('')}</div>
       <div class="conf-meta">
         ${fused ? `${fused.sourceCount} 个源 · 温度标准差 ${fused.spread}°` : ''}
         ${mae ? ` · 历史误差 ±${mae.mae}°C（${mae.days} 天）` : ''}
@@ -1069,9 +1061,7 @@ function buildConfidenceCard(d) {
       ${precip && precip.hasDisagreement ? `<div class="conf-warn">⚠️ 降水概率分歧较大（${precip.maxRisk}% vs ${precip.average}%），建议同时关注临近预报</div>` : ''}
       <details class="conf-detail">
         <summary>查看各源原始数据</summary>
-        <div class="conf-raw">
-          ${srcList.map(s => `<div class="conf-raw-row"><span>${s.name}</span><span>${s.temp}°</span></div>`).join('')}
-        </div>
+        <div class="conf-raw">${srcList.map(s => `<div class="conf-raw-row"><span>${s.name}</span><span>${s.temp}°</span></div>`).join('')}</div>
       </details>
     </div>`;
 }
@@ -1099,8 +1089,6 @@ function buildAstro(sun, moon) {
   return `<div class="section-label">天文</div><div class="astro-card glass">${items.join('')}</div>`;
 }
 function metricCard(label, value, sub) { return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`; }
-
-// WeatherAPI 一句话结论 + 折叠详情
 function buildWeatherApiSummary(wa) {
   if (!wa) return '';
   const aqi = wa.current?.air_quality || {};
@@ -1110,7 +1098,6 @@ function buildWeatherApiSummary(wa) {
     : usEpa <= 100 ? '🍃 空气质量良，敏感人群注意'
     : usEpa <= 150 ? '😷 轻度污染，敏感人群减少户外'
     : '⚠️ 空气质量较差，建议减少户外活动';
-
   return `<div class="section-label" style="margin-top:18px">补充参考 · WeatherAPI</div>
     <div class="wa-mini glass">
       <div class="wa-mini-text">${text}</div>
