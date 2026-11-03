@@ -1,0 +1,13 @@
+{
+  "name": "和风天气",
+  "short_name": "天气",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a2a4a",
+  "theme_color": "#1a2a4a",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
