@@ -24,7 +24,6 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --tabbar-h: 58px;
     --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
-    /* 天气图标语义色 */
     --icon-sunny: #ffd166;
     --icon-rain: #7ec8e3;
     --icon-snow: #d4eef7;
@@ -40,11 +39,7 @@
 
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
   html { overscroll-behavior-y: contain; }
-  body {
-    font-family: var(--font-stack); color: var(--text-primary); min-height: 100vh;
-    background: linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
-    transition: background 1.2s ease; overflow-x: hidden; -webkit-font-smoothing: antialiased;
-  }
+  body { font-family: var(--font-stack); color: var(--text-primary); min-height: 100vh; background: linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%); transition: background 1.2s ease; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
   .app { max-width: 480px; margin: 0 auto; position: relative; min-height: 100vh; }
   .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius-card); }
 
@@ -67,17 +62,9 @@
   .warning-detail.show { display: block; }
   .warning-list-item { margin-bottom: 12px; }
 
-  /* ===== Hero 主图标 ===== */
   .hero { text-align: center; padding: 24px 0 20px; }
-  .hero .main-weather-icon {
-    font-size: 64px; line-height: 1; margin-bottom: 6px;
-    display: inline-block;
-    animation: iconBreathe 4s ease-in-out infinite;
-  }
-  @keyframes iconBreathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.04); }
-  }
+  .hero .main-weather-icon { font-size: 64px; line-height: 1; margin-bottom: 6px; display: inline-block; animation: iconBreathe 4s ease-in-out infinite; }
+  @keyframes iconBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
   .hero .temp { font-size: clamp(72px, 22vw, 104px); font-weight: 200; line-height: 1; letter-spacing: -4px; font-variant-numeric: tabular-nums; }
   .hero .temp sup { font-size: 32px; font-weight: 300; vertical-align: super; letter-spacing: 0; }
   .hero .condition { font-size: 18px; font-weight: 500; margin-top: 6px; }
@@ -317,7 +304,7 @@ async function searchCityForAdd(q) {
     const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent(q)}&number=8&lang=zh&key=${state.apiKey}`);
     if (data.code !== '200' || !data.location?.length) { box.innerHTML = '<div class="cs-empty">未找到城市</div>'; return; }
     box.innerHTML = data.location.map(loc => { const exists = state.cities.some(c => c.id === loc.id); const sub = [loc.adm2, loc.adm1].filter(Boolean).join(' · '); return `<div class="cs-item"><div class="cs-info"><div class="cs-name">${loc.name}${exists ? '<span class="cs-tag">已添加</span>' : ''}</div><div class="cs-sub">${sub}</div></div><div class="cs-add-icon">${exists ? '✓' : '+'}</div></div>`; }).join('');
-    box.querySelectorAll('.cs-item').forEach((el, i) => { const loc = data.location[i]; el.onclick = () => addCity({ id: loc.id, name: loc.name, adm: [loc.adm2, loc.adm1].filter(Boolean).join(' · '), lon: parseFloat(loc.lon), lat: parseFloat(loc.lat) }); });
+    box.querySelectorAll('.cs-item').forEach((el, i) => { const loc = data.location[i]; el.onclick = () => addCity({ id: loc.id, name: loc.name, adm: [loc.adm2, loc.adm1].filter(Boolean).join(' · '), lon: parseFloat(loc.lon), lat: parseFloat(loc.lat), adcode: loc.adcode || '' }); });
   } catch (e) { box.innerHTML = `<div class="cs-empty">请求失败：${e.message}</div>`; }
 }
 function addCity(city) { const idx = state.cities.findIndex(c => c.id === city.id); if (idx >= 0) { state.activeIndex = idx; } else { state.cities.push(city); state.activeIndex = state.cities.length - 1; } saveCities(); closeCityPanel(); loadWeather(); }
@@ -331,21 +318,66 @@ function initLocation() {
   if (!navigator.geolocation) { fallbackBeijing(); return; }
   navigator.geolocation.getCurrentPosition(async pos => {
     const lon = pos.coords.longitude.toFixed(2), lat = pos.coords.latitude.toFixed(2); const { geo } = getHosts();
-    try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${lon},${lat}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat) }); } else fallbackBeijing(); } catch { fallbackBeijing(); }
+    try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${lon},${lat}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat), adcode:l.adcode||'' }); } else fallbackBeijing(); } catch { fallbackBeijing(); }
   }, () => fallbackBeijing(), { timeout: 6000, maximumAge: 600000 });
 }
 async function fallbackBeijing() {
   const { geo } = getHosts();
-  try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent('北京')}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat) }); } else { document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>'; } } catch (e) { document.getElementById('homeContent').innerHTML = `<div class="loading">加载失败：${e.message}</div>`; }
+  try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent('北京')}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat), adcode:l.adcode||'' }); } else { document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>'; } } catch (e) { document.getElementById('homeContent').innerHTML = `<div class="loading">加载失败：${e.message}</div>`; }
 }
 
+/* ================================================================
+   nmc.cn 预警加载（中央气象台官方数据）
+   ================================================================ */
+async function loadWarnings(city) {
+  const cityName = city.name.replace(/[市县区旗盟]$/, '').trim();
+  if (!cityName) return [];
+
+  try {
+    // 拉取全国预警列表，pageSize 设大一些以提高命中率
+    const url = `https://www.nmc.cn/rest/findAlarm?pageNo=1&pageSize=200&signaltype=&signallevel=&province=`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    // 响应结构：data.page.list[reference:1]
+    const list = data?.data?.page?.list;
+    if (!Array.isArray(list) || !list.length) return [];
+
+    // 按城市名宽松匹配标题（nmc 的 title 通常包含“XX市/县气象台发布…”）
+    const matched = list.filter(a => {
+      const t = a.title || '';
+      return t.includes(cityName) || cityName.includes(t.replace(/气象台.*$/, '').replace(/^.*?省/, '').replace(/市.*$/, '').trim());
+    });
+
+    // 取前 3 条，映射为前端统一格式
+    return matched.slice(0, 3).map(a => ({
+      title: a.title || '气象预警',
+      issuetime: a.issuetime || '',
+      alertid: a.alertid || '',
+      // nmc.cn 的详情页 URL 需要通过 alertid 拼出[reference:2]
+      detailUrl: a.alertid ? `https://www.nmc.cn/publish/alarm/${a.alertid}.html` : '',
+    }));
+  } catch (e) {
+    console.warn('nmc.cn 预警请求失败:', e);
+    return [];
+  }
+}
+
+/* ================================================================
+   天气加载
+   ================================================================ */
 async function loadWeather() {
   const city = getActiveCity();
   if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
+
+  // 并行发起预警请求（不阻塞天气主流程）
+  const warningsPromise = loadWarnings(city);
+
   const { api } = getHosts(); const key = state.apiKey, loc = city.id;
   const coord = city.lon && city.lat ? `${city.lon},${city.lat}` : null;
+
   const tasks = [
     fetchJson(`${api}/v7/weather/now?location=${loc}&key=${key}`),
     fetchJson(`${api}/v7/weather/24h?location=${loc}&key=${key}`),
@@ -353,13 +385,19 @@ async function loadWeather() {
     fetchJson(`${api}/v7/air/now?location=${loc}&key=${key}`),
     fetchJson(`${api}/v7/indices/1d?location=${loc}&type=0&key=${key}`),
   ];
-  if (coord) { tasks.push(fetchJson(`${api}/weatheralert/v1/current/${city.lat}/${city.lon}?key=${key}`)); tasks.push(fetchJson(`${api}/v7/minutely/5m?location=${coord}&key=${key}`)); } else { tasks.push(Promise.resolve(null)); tasks.push(Promise.resolve(null)); }
+  if (coord) {
+    tasks.push(fetchJson(`${api}/v7/minutely/5m?location=${coord}&key=${key}`));
+  } else { tasks.push(Promise.resolve(null)); }
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
+
   const r = await Promise.allSettled(tasks);
+  const warnings = await warningsPromise;
   if (seq !== loadSeq) return;
+
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
   const dailyData = r[2].status==='fulfilled' ? r[2].value : null;
+
   if (!nowData || nowData.code !== '200' || !dailyData || dailyData.code !== '200') {
     const code = nowData?.code || dailyData?.code || 'NETWORK';
     let msg = `加载失败（${code}）`;
@@ -367,20 +405,24 @@ async function loadWeather() {
     document.getElementById('homeContent').innerHTML = `<div class="loading">${msg}<br><button class="btn btn-ghost" style="max-width:160px;margin:12px auto 0" onclick="loadWeather()">重试</button></div>`;
     return;
   }
+
   state.data = {
     city, now: nowData.now,
     hourly: r[1].status==='fulfilled' && r[1].value?.code==='200' ? r[1].value.hourly : [],
     daily: dailyData.daily,
     air: r[3].status==='fulfilled' && r[3].value?.code==='200' ? r[3].value.now : null,
     indices: r[4].status==='fulfilled' && r[4].value?.code==='200' ? r[4].value.daily : [],
-    warnings: r[5].status==='fulfilled' && r[5].value ? (r[5].value.alerts || r[5].value.warning || []) : [],
-    minutely: r[6].status==='fulfilled' && r[6].value?.code==='200' ? r[6].value : null,
-    sun: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.daily?.[0] : null,
-    moon: r[8].status==='fulfilled' && r[8].value?.code==='200' ? r[8].value.moonPhase?.[0] : null,
+    warnings: warnings,
+    minutely: r[5].status==='fulfilled' && r[5].value?.code==='200' ? r[5].value : null,
+    sun: r[6].status==='fulfilled' && r[6].value?.code==='200' ? r[6].value.daily?.[0] : null,
+    moon: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.moonPhase?.[0] : null,
   };
   renderAll();
 }
 
+/* ================================================================
+   渲染
+   ================================================================ */
 function renderAll() {
   const d = state.data; if (!d) return;
   setTheme(d.now.icon);
@@ -403,47 +445,11 @@ function setTheme(iconCode) {
 
 /* ===== 图标解析与着色 ===== */
 const KNOWN_ICONS = new Set(['100','101','102','103','104','150','151','152','153','300','301','302','303','304','305','306','307','308','309','310','311','312','313','314','315','316','317','318','399','400','401','402','403','404','405','406','407','408','409','410','499','500','501','502','503','504','507','508','509','510','511','512','513','514','515','900','901','999']);
-
-function resolveIcon(code) {
-  const c = String(code || '').trim();
-  if (KNOWN_ICONS.has(c)) return c;
-  const n = parseInt(c, 10);
-  if (!isNaN(n)) {
-    if (n >= 300 && n < 400) return '399';
-    if (n >= 400 && n < 500) return '499';
-    if (n >= 500 && n < 600) return '501';
-    if (n >= 100 && n < 200) return '104';
-  }
-  return '999';
-}
-
-function iconColorClass(code) {
-  const n = parseInt(resolveIcon(code), 10);
-  if (isNaN(n)) return 'ic-default';
-  if (n === 100 || n === 150) return 'ic-sunny';
-  if (n >= 101 && n <= 104) return 'ic-cloud';
-  if (n >= 300 && n < 400) return 'ic-rain';
-  if (n >= 400 && n < 500) return 'ic-snow';
-  if (n >= 500 && n < 600) return 'ic-fog';
-  return 'ic-default';
-}
-
-function iconHtml(code, extraClass = '') {
-  const resolved = resolveIcon(code);
-  const color = iconColorClass(code);
-  return `<i class="qi-${resolved} ${color} ${extraClass}"></i>`;
-}
-
-/* 着色类 */
+function resolveIcon(code) { const c = String(code || '').trim(); if (KNOWN_ICONS.has(c)) return c; const n = parseInt(c, 10); if (!isNaN(n)) { if (n >= 300 && n < 400) return '399'; if (n >= 400 && n < 500) return '499'; if (n >= 500 && n < 600) return '501'; if (n >= 100 && n < 200) return '104'; } return '999'; }
+function iconColorClass(code) { const n = parseInt(resolveIcon(code), 10); if (isNaN(n)) return 'ic-default'; if (n === 100 || n === 150) return 'ic-sunny'; if (n >= 101 && n <= 104) return 'ic-cloud'; if (n >= 300 && n < 400) return 'ic-rain'; if (n >= 400 && n < 500) return 'ic-snow'; if (n >= 500 && n < 600) return 'ic-fog'; return 'ic-default'; }
+function iconHtml(code, extraClass = '') { const resolved = resolveIcon(code); const color = iconColorClass(code); return `<i class="qi-${resolved} ${color} ${extraClass}"></i>`; }
 const iconStyle = document.createElement('style');
-iconStyle.textContent = `
-  .ic-sunny  { color: var(--icon-sunny); }
-  .ic-rain   { color: var(--icon-rain); }
-  .ic-snow   { color: var(--icon-snow); }
-  .ic-fog    { color: var(--icon-fog); }
-  .ic-cloud  { color: var(--icon-cloud); }
-  .ic-default{ color: var(--icon-default); }
-`;
+iconStyle.textContent = `.ic-sunny{color:var(--icon-sunny)}.ic-rain{color:var(--icon-rain)}.ic-snow{color:var(--icon-snow)}.ic-fog{color:var(--icon-fog)}.ic-cloud{color:var(--icon-cloud)}.ic-default{color:var(--icon-default)}`;
 document.head.appendChild(iconStyle);
 
 /* ===== 首页 ===== */
@@ -469,34 +475,22 @@ function buildHome(d) {
 function buildWarningBanner(alerts) {
   if (!alerts?.length) return '';
   const a = alerts[0];
-  const SEV = { minor:'一般', moderate:'较重', severe:'严重', extreme:'特别严重' };
-  const title = a.headline || a.title || '气象预警';
-  const sev = SEV[a.severity] || a.severity || '';
-  const color = a.color?.code || '';
-  const desc = a.description || a.text || '';
-  const instr = a.instruction || '';
-  const expire = a.expireTime || a.endTime || '';
+  // nmc.cn 字段：title, issuetime, detailUrl
+  const title = a.title || '气象预警';
+  const time = a.issuetime || '';
+  const detailUrl = a.detailUrl || '';
   return `<div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
     <span class="w-icon">⚠</span><span class="w-title">${title}</span>
-    <span class="w-severity">${sev}${color ? ' · ' + color : ''}</span>
+    <span class="w-severity">${time}</span>
     <div class="warning-detail">
-      ${desc ? '<div>' + desc + '</div>' : ''}
-      ${instr ? '<div style="margin-top:6px;color:#ffd166">防御指南：' + instr + '</div>' : ''}
-      ${expire ? '<div style="margin-top:6px;font-size:11px;opacity:0.6">有效期至 ' + expire + '</div>' : ''}
+      ${detailUrl ? `<div><a href="${detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
+      <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
     </div>
   </div>`;
 }
 
-function checkHasRain(m) {
-  if (!m) return false;
-  if (m.summary && (m.summary.includes('雨') || m.summary.includes('雪') || m.summary.includes('降水'))) return true;
-  if (m.minutely && m.minutely.some(x => parseFloat(x.precip) > 0)) return true;
-  return false;
-}
-function buildRainBanner(m) {
-  const summary = m.summary || '未来 2 小时有降水';
-  return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${summary}</span><span class="rb-arrow">›</span></div>`;
-}
+function checkHasRain(m) { if (!m) return false; if (m.summary && (m.summary.includes('雨') || m.summary.includes('雪') || m.summary.includes('降水'))) return true; if (m.minutely && m.minutely.some(x => parseFloat(x.precip) > 0)) return true; return false; }
+function buildRainBanner(m) { const summary = m.summary || '未来 2 小时有降水'; return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${summary}</span><span class="rb-arrow">›</span></div>`; }
 
 function buildHourly(hourly) {
   if (!hourly?.length) return '';
@@ -550,13 +544,25 @@ function buildRainPage(m) {
   return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div><div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。</div>`;
 }
 
+/* ===== 预警页（nmc.cn 数据） ===== */
 function buildWarningPage(warnings) {
-  if (!warnings?.length) return `<div class="rain-empty"><div class="re-icon">✅</div>当前无气象预警<br><span style="font-size:12px;opacity:0.6">所在地区暂无生效中的预警信息</span></div>`;
-  const SEV = { minor:'一般', moderate:'较重', severe:'严重', extreme:'特别严重' };
-  return `<div class="section-label" style="margin-top:16px">生效中的预警（${warnings.length}）</div>` + warnings.map(a => {
-    const title = a.headline || a.title || '气象预警'; const sev = SEV[a.severity] || a.severity || ''; const color = a.color?.code || ''; const desc = a.description || a.text || ''; const instr = a.instruction || ''; const expire = a.expireTime || a.endTime || '';
-    return `<div class="warning-list-item"><div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')"><span class="w-icon">⚠</span><span class="w-title">${title}</span><span class="w-severity">${sev}${color ? ' · ' + color : ''}</span><div class="warning-detail">${desc ? '<div>' + desc + '</div>' : ''}${instr ? '<div style="margin-top:6px;color:#ffd166">防御指南：' + instr + '</div>' : ''}${expire ? '<div style="margin-top:6px;font-size:11px;opacity:0.6">有效期至 ' + expire + '</div>' : ''}</div></div></div>`;
-  }).join('');
+  if (!warnings?.length) return `<div class="rain-empty"><div class="re-icon">✅</div>当前无气象预警<br><span style="font-size:12px;opacity:0.6">中央气象台暂未发布该地区生效中的预警</span></div>`;
+  return `<div class="section-label" style="margin-top:16px">生效中的预警（${warnings.length}）</div>` +
+    warnings.map(a => {
+      const title = a.title || '气象预警';
+      const time = a.issuetime || '';
+      const detailUrl = a.detailUrl || '';
+      return `<div class="warning-list-item">
+        <div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
+          <span class="w-icon">⚠</span><span class="w-title">${title}</span>
+          <span class="w-severity">${time}</span>
+          <div class="warning-detail">
+            ${detailUrl ? `<div><a href="${detailUrl}" target="_blank" rel="noopener" style="color:#7ec8e3">查看中央气象台详情 ›</a></div>` : ''}
+            <div style="margin-top:6px;font-size:11px;opacity:0.6">数据来源：中央气象台（nmc.cn）</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
 }
 
 function buildIndicesPage(indices) {
