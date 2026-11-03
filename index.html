@@ -22,8 +22,15 @@
     --radius-card:20px;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    --tabbar-h: 56px;
+    --tabbar-h: 58px;
     --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+    /* 天气图标语义色 */
+    --icon-sunny: #ffd166;
+    --icon-rain: #7ec8e3;
+    --icon-snow: #d4eef7;
+    --icon-fog: #d4b896;
+    --icon-cloud: #c8d0d8;
+    --icon-default: #ffffff;
   }
   .theme-clear  { --bg-a:#1e4a7a; --bg-b:#3a7bc8; --bg-c:#6aace0; }
   .theme-cloudy { --bg-a:#2a3a4a; --bg-b:#4a5a6a; --bg-c:#7a8a9a; }
@@ -38,74 +45,59 @@
     background: linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
     transition: background 1.2s ease; overflow-x: hidden; -webkit-font-smoothing: antialiased;
   }
-
   .app { max-width: 480px; margin: 0 auto; position: relative; min-height: 100vh; }
   .glass { background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: var(--radius-card); }
 
-  /* ===== 顶部栏 ===== */
-  .topbar {
-    position: sticky; top: 0; z-index: 40;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: calc(12px + var(--safe-top)) 16px 10px;
-    background: linear-gradient(180deg, var(--bg-a) 0%, transparent 100%);
-  }
-  .topbar .city { font-size: 20px; font-weight: 600; cursor: pointer; }
-  .topbar .city small { font-weight: 400; font-size: 12px; color: var(--text-secondary); margin-left: 6px; }
+  .topbar { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: calc(12px + var(--safe-top)) 16px 10px; background: linear-gradient(180deg, var(--bg-a) 0%, var(--bg-a) 70%, transparent 100%); }
+  .topbar .city { font-size: 20px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .topbar .city small { font-weight: 400; font-size: 11px; color: var(--text-secondary); }
   .icon-btn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--glass-bg); border: 1px solid var(--glass-border); color: #fff; font-size: 18px; cursor: pointer; transition: transform 0.15s, background 0.2s; }
   .icon-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.22); }
 
-  /* ===== 搜索 ===== */
-  .search-panel { position: fixed; top: 0; left: 0; right: 0; z-index: 80; display: none; padding: calc(12px + var(--safe-top)) 16px 16px; background: rgba(10,18,32,0.75); backdrop-filter: blur(20px); }
-  .search-panel.show { display: block; }
-  .search-bar { display: flex; align-items: center; padding: 10px 10px 10px 16px; gap: 8px; }
-  .search-bar input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; font-family: var(--font-stack); }
-  .search-bar input::placeholder { color: rgba(255,255,255,0.4); }
-  .search-bar button { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 8px 14px; border-radius: 10px; font-size: 13px; cursor: pointer; font-family: var(--font-stack); }
-  .search-results { margin-top: 8px; max-height: 50vh; overflow-y: auto; display: none; border-radius: 16px; }
-  .search-results.show { display: block; }
-  .search-item { padding: 14px 18px; font-size: 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06); }
-  .search-item:last-child { border-bottom: none; }
-  .search-item .s-sub { font-size: 11px; color: var(--text-secondary); margin-left: 8px; }
-
-  /* ===== 视图容器 ===== */
-  main { padding: 0 16px calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
+  main { padding: calc(64px + var(--safe-top)) 16px calc(var(--tabbar-h) + var(--safe-bottom) + 24px); }
   .view { display: none; animation: fadeIn 0.28s ease; }
   .view.active { display: block; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-  /* ===== 预警 ===== */
   .warning-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; margin-bottom: 12px; border-radius: 14px; background: rgba(255,160,80,0.18); border: 1px solid rgba(255,160,80,0.35); font-size: 13px; cursor: pointer; flex-wrap: wrap; }
   .warning-banner .w-icon { font-size: 18px; }
   .warning-banner .w-title { flex: 1; font-weight: 600; min-width: 0; }
   .warning-banner .w-severity { color: rgba(255,255,255,0.7); font-size: 11px; }
   .warning-detail { display: none; width: 100%; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,160,80,0.25); font-size: 12px; line-height: 1.7; color: rgba(255,255,255,0.85); }
   .warning-detail.show { display: block; }
+  .warning-list-item { margin-bottom: 12px; }
 
-  /* ===== Hero ===== */
+  /* ===== Hero 主图标 ===== */
   .hero { text-align: center; padding: 24px 0 20px; }
+  .hero .main-weather-icon {
+    font-size: 64px; line-height: 1; margin-bottom: 6px;
+    display: inline-block;
+    animation: iconBreathe 4s ease-in-out infinite;
+  }
+  @keyframes iconBreathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+  }
   .hero .temp { font-size: clamp(72px, 22vw, 104px); font-weight: 200; line-height: 1; letter-spacing: -4px; font-variant-numeric: tabular-nums; }
   .hero .temp sup { font-size: 32px; font-weight: 300; vertical-align: super; letter-spacing: 0; }
   .hero .condition { font-size: 18px; font-weight: 500; margin-top: 6px; }
   .hero .feels-like { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
   .hero .hi-lo { display: inline-flex; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--text-secondary); }
 
-  /* ===== 降雨横幅 ===== */
   .rain-banner { display: flex; align-items: center; gap: 12px; padding: 14px 16px; margin-bottom: 16px; border-radius: 16px; background: rgba(126,200,227,0.15); border: 1px solid rgba(126,200,227,0.35); cursor: pointer; transition: transform 0.15s; }
   .rain-banner:active { transform: scale(0.98); }
   .rain-banner .rb-icon { font-size: 22px; }
   .rain-banner .rb-text { flex: 1; font-size: 13px; line-height: 1.5; }
   .rain-banner .rb-arrow { color: var(--text-secondary); font-size: 14px; }
 
-  /* ===== 区块标题 ===== */
   .section-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-secondary); padding: 0 4px 8px; }
 
-  /* ===== 逐小时 ===== */
   .hourly-card { padding: 16px 0 14px; margin-bottom: 18px; overflow: hidden; }
   .hourly-scroll { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding: 0 16px; scrollbar-width: none; }
   .hourly-scroll::-webkit-scrollbar { display: none; }
   .hour-item { flex: 0 0 62px; text-align: center; scroll-snap-align: start; position: relative; padding-bottom: 8px; }
   .hour-item .h-time { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
-  .hour-item .h-icon { font-size: 22px; margin-bottom: 6px; line-height: 1; }
+  .hour-item .h-icon { font-size: 22px; margin-bottom: 6px; line-height: 1; transition: color 0.3s; }
   .hour-item .h-temp { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .hour-item.now .h-time { color: #fff; font-weight: 600; }
   .hour-item.now::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 18px; height: 2px; border-radius: 1px; background: #fff; }
@@ -113,13 +105,12 @@
   .h-pop-bar { height: 2px; border-radius: 1px; background: rgba(255,255,255,0.12); margin: 2px 12px 0; }
   .h-pop-bar > div { height: 100%; border-radius: 1px; background: #7ec8e3; }
 
-  /* ===== 7 天 ===== */
   .daily-card { padding: 6px 16px; margin-bottom: 18px; }
   .day-row { display: flex; align-items: center; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
   .day-row:last-child { border-bottom: none; }
   .day-name { width: 48px; font-size: 14px; font-weight: 500; flex-shrink: 0; }
   .day-name.today { font-weight: 700; }
-  .day-icon { width: 34px; text-align: center; font-size: 20px; flex-shrink: 0; }
+  .day-icon { width: 34px; text-align: center; font-size: 20px; flex-shrink: 0; transition: color 0.3s; }
   .day-rain { width: 62px; font-size: 10px; color: var(--text-secondary); text-align: right; flex-shrink: 0; line-height: 1.35; }
   .day-bar-wrap { flex: 1; display: flex; align-items: center; gap: 8px; margin: 0 10px; min-width: 0; }
   .day-lo, .day-hi { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; width: 28px; flex-shrink: 0; }
@@ -127,7 +118,6 @@
   .bar-track { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); position: relative; overflow: hidden; min-width: 40px; }
   .bar-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: linear-gradient(90deg, #7ec8e3, #ffd166); opacity: 0.85; }
 
-  /* ===== 降雨页 ===== */
   .rain-summary { padding: 20px 18px; margin-bottom: 16px; font-size: 15px; line-height: 1.6; }
   .rain-summary .rs-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.5px; }
   .rain-chart-card { padding: 20px 16px 14px; margin-bottom: 16px; }
@@ -139,7 +129,12 @@
   .rain-empty { text-align: center; padding: 60px 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
   .rain-empty .re-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.6; }
 
-  /* ===== 详情页 ===== */
+  .indices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .index-card { padding: 14px; border-radius: 16px; }
+  .idx-type { font-size: 11px; color: var(--text-secondary); }
+  .idx-category { font-size: 16px; font-weight: 600; margin: 4px 0; }
+  .idx-text { font-size: 10px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
   .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
   .metric-card { padding: 14px 16px; border-radius: 16px; }
   .metric-card .m-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 6px; }
@@ -148,59 +143,48 @@
   .metric-card .m-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
   .aqi-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: linear-gradient(90deg, #6bcf7f, #ffd93d, #ff9f43, #ff6b6b, #a55eea); position: relative; }
   .aqi-dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 1.5px solid rgba(0,0,0,0.25); }
-
-  .indices-row { display: flex; gap: 10px; margin-bottom: 18px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-  .indices-row::-webkit-scrollbar { display: none; }
-  .index-card { flex: 0 0 128px; padding: 14px; border-radius: 16px; }
-  .idx-type { font-size: 11px; color: var(--text-secondary); }
-  .idx-category { font-size: 15px; font-weight: 600; margin: 4px 0; }
-  .idx-text { font-size: 10px; color: var(--text-secondary); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-
   .astro-card { display: flex; padding: 16px 0; margin-bottom: 18px; }
   .astro-item { flex: 1; text-align: center; }
   .astro-item .a-label { font-size: 10px; color: var(--text-secondary); margin-bottom: 4px; }
   .astro-item .a-value { font-size: 15px; font-weight: 600; }
   .astro-item .a-sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+  .map-entry { display: flex; align-items: center; justify-content: space-between; padding: 16px; margin-bottom: 18px; cursor: pointer; }
+  .map-entry .me-text { font-size: 14px; font-weight: 500; }
+  .map-entry .me-arrow { color: var(--text-secondary); font-size: 18px; }
 
-  /* ===== 底部导航 ===== */
-  .tabbar {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    display: flex; justify-content: space-around; align-items: center;
-    height: calc(var(--tabbar-h) + var(--safe-bottom));
-    padding-bottom: var(--safe-bottom);
-    background: rgba(20, 28, 42, 0.82);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    border-top: 1px solid rgba(255,255,255,0.08);
-    max-width: 480px; margin: 0 auto;
-  }
-  .tab {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; height: 100%; cursor: pointer; color: var(--text-secondary);
-    font-size: 10px; transition: color 0.2s; user-select: none;
-  }
-  .tab .tab-icon { font-size: 20px; line-height: 1; transition: transform 0.2s; }
+  .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 50; display: flex; justify-content: space-around; align-items: center; height: calc(var(--tabbar-h) + var(--safe-bottom)); padding-bottom: var(--safe-bottom); background: rgba(20, 28, 42, 0.88); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255,255,255,0.08); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 100%; cursor: pointer; color: var(--text-secondary); font-size: 9px; transition: color 0.2s; user-select: none; }
+  .tab .tab-icon { font-size: 18px; line-height: 1; transition: transform 0.2s; }
   .tab:active .tab-icon { transform: scale(0.88); }
   .tab.active { color: #fff; }
   .tab.active .tab-icon { transform: translateY(-1px); }
 
-  /* ===== 下拉刷新指示器 ===== */
-  .pull-indicator {
-    position: fixed; top: calc(var(--safe-top) + 8px); left: 50%; transform: translateX(-50%) translateY(-60px);
-    z-index: 90; width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.25s ease, opacity 0.25s; opacity: 0;
-  }
-  .pull-indicator.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-  .pull-indicator.spinning { transform: translateX(-50%) translateY(0); opacity: 1; }
-  .pull-indicator .pi-spinner { width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; }
-  .pull-indicator.spinning .pi-spinner { animation: spin 0.7s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .city-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 85; display: none; opacity: 0; transition: opacity 0.25s; }
+  .city-backdrop.show { display: block; opacity: 1; }
+  .city-sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 480px; z-index: 90; background: rgba(28,36,52,0.97); backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px); border-radius: 24px 24px 0 0; border: 1px solid rgba(255,255,255,0.12); border-bottom: none; padding: 10px 16px calc(20px + var(--safe-bottom)); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); max-height: 80vh; display: flex; flex-direction: column; }
+  .city-sheet.show { transform: translateX(-50%) translateY(0); }
+  .cs-handle { width: 40px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); margin: 0 auto 12px; flex-shrink: 0; }
+  .cs-title { font-size: 17px; font-weight: 600; margin-bottom: 12px; flex-shrink: 0; }
+  .cs-search { display: flex; align-items: center; padding: 8px 8px 8px 16px; gap: 8px; margin-bottom: 10px; flex-shrink: 0; }
+  .cs-search input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 14px; font-family: var(--font-stack); }
+  .cs-search input::placeholder { color: rgba(255,255,255,0.4); }
+  .cs-search button { background: rgba(255,255,255,0.15); border: none; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: var(--font-stack); }
+  .cs-list { flex: 1; overflow-y: auto; min-height: 100px; }
+  .cs-item { display: flex; align-items: center; padding: 14px 4px; border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+  .cs-item:last-child { border-bottom: none; }
+  .cs-item.active .cs-name { color: #7ec8e3; }
+  .cs-info { flex: 1; min-width: 0; }
+  .cs-name { font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .cs-sub { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .cs-tag { font-size: 10px; color: #7ec8e3; background: rgba(126,200,227,0.15); padding: 1px 6px; border-radius: 4px; font-weight: 400; }
+  .cs-del { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.06); border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .cs-del:active { background: rgba(255,80,80,0.25); color: #fff; }
+  .cs-add-icon { font-size: 20px; color: var(--text-secondary); flex-shrink: 0; padding-right: 8px; }
+  .cs-empty { text-align: center; padding: 40px 20px; color: var(--text-secondary); font-size: 13px; line-height: 1.7; }
 
-  /* ===== 设置 ===== */
-  .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+  .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
   .settings-overlay.show { display: flex; }
-  .settings-panel { width: 100%; max-width: 380px; padding: 24px; border-radius: 24px; background: rgba(28,36,52,0.94); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.12); }
+  .settings-panel { width: 100%; max-width: 380px; padding: 24px; border-radius: 24px; background: rgba(28,36,52,0.96); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.12); }
   .settings-panel h3 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
   .settings-panel .hint { font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
   .settings-panel label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
@@ -214,56 +198,47 @@
 
   .loading { text-align: center; padding: 80px 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.8; }
   .spinner { width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.15); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  @media (max-width: 380px) { .metrics-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 380px) { .metrics-grid, .indices-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <div class="app">
   <header class="topbar">
-    <div class="city" id="cityName" onclick="openSearch()">定位中… <small>点击搜索城市</small></div>
-    <div class="icon-btn" onclick="initLocation()" title="重新定位">◎</div>
+    <div class="city" id="cityName" onclick="openCityPanel()">定位中… <small>▼ 切换</small></div>
+    <div class="icon-btn" onclick="openSettings()" title="设置">⚙</div>
   </header>
 
   <main id="views">
-    <section class="view active" id="view-home">
-      <div id="homeContent"><div class="loading"><div class="spinner"></div>正在加载…</div></div>
-    </section>
-    <section class="view" id="view-rain">
-      <div id="rainContent"></div>
-    </section>
-    <section class="view" id="view-detail">
-      <div id="detailContent"></div>
-    </section>
+    <section class="view active" id="view-home"><div id="homeContent"><div class="loading"><div class="spinner"></div>正在加载…</div></div></section>
+    <section class="view" id="view-rain"><div id="rainContent"></div></section>
+    <section class="view" id="view-warning"><div id="warningContent"></div></section>
+    <section class="view" id="view-indices"><div id="indicesContent"></div></section>
+    <section class="view" id="view-detail"><div id="detailContent"></div></section>
   </main>
 
   <nav class="tabbar">
-    <div class="tab active" data-tab="home" onclick="switchTab('home')">
-      <span class="tab-icon">🏠</span><span>首页</span>
-    </div>
-    <div class="tab" data-tab="rain" onclick="switchTab('rain')">
-      <span class="tab-icon">🌧</span><span>降雨</span>
-    </div>
-    <div class="tab" data-tab="detail" onclick="switchTab('detail')">
-      <span class="tab-icon">📊</span><span>详情</span>
-    </div>
+    <div class="tab active" data-tab="home" onclick="switchTab('home')"><span class="tab-icon">🏠</span><span>首页</span></div>
+    <div class="tab" data-tab="rain" onclick="switchTab('rain')"><span class="tab-icon">🌧</span><span>降雨</span></div>
+    <div class="tab" data-tab="warning" onclick="switchTab('warning')"><span class="tab-icon">⚠️</span><span>预警</span></div>
+    <div class="tab" data-tab="indices" onclick="switchTab('indices')"><span class="tab-icon">📋</span><span>指数</span></div>
+    <div class="tab" data-tab="detail" onclick="switchTab('detail')"><span class="tab-icon">📊</span><span>详情</span></div>
   </nav>
 </div>
 
-<!-- 搜索 -->
-<div class="search-panel" id="searchPanel">
-  <div class="search-bar glass">
-    <input id="searchInput" placeholder="搜索城市，如 北京" autocomplete="off" oninput="onSearchInput()">
-    <button onclick="closeSearch()">取消</button>
+<div class="city-backdrop" id="cityBackdrop" onclick="closeCityPanel()"></div>
+<div class="city-sheet" id="citySheet">
+  <div class="cs-handle"></div>
+  <div class="cs-title">我的城市</div>
+  <div class="cs-search glass">
+    <input id="citySearchInput" placeholder="搜索城市添加，如 上海" oninput="onCitySearch()">
+    <button onclick="clearCitySearch()">清除</button>
   </div>
-  <div class="search-results glass" id="searchResults"></div>
+  <div class="cs-list" id="cityList"></div>
 </div>
 
-<!-- 下拉刷新 -->
-<div class="pull-indicator" id="pullIndicator"><div class="pi-spinner"></div></div>
-
-<!-- 设置 -->
 <div class="settings-overlay" id="settingsOverlay">
   <div class="settings-panel">
     <h3>和风天气配置</h3>
@@ -280,32 +255,29 @@
 </div>
 
 <script>
-/* ================================================================
-   状态
-   ================================================================ */
-const KEY_API='qweather_api_key', KEY_HOST='qweather_api_host', KEY_CITY='qweather_last_city';
-const state = { apiKey:'', apiHost:'', locationId:null, cityName:'', lon:null, lat:null, data:null };
+const KEY_API='qweather_api_key', KEY_HOST='qweather_api_host';
+const KEY_CITIES='qweather_cities', KEY_ACTIVE='qweather_active_index';
+const state = { apiKey: '', apiHost: '', cities: [], activeIndex: 0, data: null };
 let currentTab = 'home';
+let loadSeq = 0;
 
 function loadSettings() {
   state.apiKey  = localStorage.getItem(KEY_API)  || '';
   state.apiHost = localStorage.getItem(KEY_HOST) || '';
-  const c = localStorage.getItem(KEY_CITY);
-  if (c) { try { const o = JSON.parse(c); state.locationId=o.id; state.cityName=o.name; state.lon=o.lon; state.lat=o.lat; } catch {} }
+  try { const arr = JSON.parse(localStorage.getItem(KEY_CITIES) || '[]'); if (Array.isArray(arr)) state.cities = arr.filter(c => c && c.id); } catch {}
+  const idx = parseInt(localStorage.getItem(KEY_ACTIVE) || '0', 10);
+  state.activeIndex = Math.min(Math.max(idx, 0), Math.max(state.cities.length - 1, 0));
 }
+function saveCities() { localStorage.setItem(KEY_CITIES, JSON.stringify(state.cities)); localStorage.setItem(KEY_ACTIVE, String(state.activeIndex)); }
 function saveSettings() {
   const key = document.getElementById('apiKeyInput').value.trim();
   const host = document.getElementById('apiHostInput').value.trim();
   if (!key) { alert('请填写 API Key'); return; }
   localStorage.setItem(KEY_API, key); localStorage.setItem(KEY_HOST, host);
   state.apiKey = key; state.apiHost = host; closeSettings();
-  state.locationId ? loadWeather() : initLocation();
+  state.cities.length ? loadWeather() : initLocation();
 }
-function openSettings() {
-  document.getElementById('apiKeyInput').value = state.apiKey;
-  document.getElementById('apiHostInput').value = state.apiHost;
-  document.getElementById('settingsOverlay').classList.add('show');
-}
+function openSettings() { document.getElementById('apiKeyInput').value = state.apiKey; document.getElementById('apiHostInput').value = state.apiHost; document.getElementById('settingsOverlay').classList.add('show'); }
 function closeSettings() { document.getElementById('settingsOverlay').classList.remove('show'); }
 function getHosts() {
   const h = state.apiHost.trim();
@@ -313,99 +285,67 @@ function getHosts() {
   return { geo:'https://geoapi.qweather.com', api:'https://devapi.qweather.com' };
 }
 async function fetchJson(url) { const r = await fetch(url); if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); }
+function getActiveCity() { return state.cities[state.activeIndex] || null; }
 
-/* ================================================================
-   视图切换
-   ================================================================ */
+const TABS = ['home','rain','warning','indices','detail'];
 function switchTab(name, updateHash = true) {
-  if (!['home','rain','detail'].includes(name)) name = 'home';
+  if (!TABS.includes(name)) name = 'home';
   currentTab = name;
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
   if (updateHash && location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
-window.addEventListener('hashchange', () => {
-  switchTab(location.hash.slice(1) || 'home', false);
-});
+window.addEventListener('hashchange', () => { switchTab(location.hash.slice(1) || 'home', false); });
 
-/* ================================================================
-   城市搜索
-   ================================================================ */
-let searchTimer = null;
-function openSearch() {
-  document.getElementById('searchPanel').classList.add('show');
-  document.getElementById('searchResults').classList.remove('show');
-  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+function openCityPanel() { renderCityList(); document.getElementById('cityBackdrop').classList.add('show'); document.getElementById('citySheet').classList.add('show'); document.getElementById('citySearchInput').value = ''; }
+function closeCityPanel() { document.getElementById('cityBackdrop').classList.remove('show'); document.getElementById('citySheet').classList.remove('show'); }
+function clearCitySearch() { document.getElementById('citySearchInput').value = ''; renderCityList(); }
+function renderCityList() {
+  const box = document.getElementById('cityList');
+  if (!state.cities.length) { box.innerHTML = '<div class="cs-empty">还没有添加城市<br>在上方搜索框输入城市名添加</div>'; return; }
+  box.innerHTML = state.cities.map((c, i) => `<div class="cs-item ${i === state.activeIndex ? 'active' : ''}"><div class="cs-info"><div class="cs-name">${c.name}${i === state.activeIndex ? '<span class="cs-tag">当前</span>' : ''}</div><div class="cs-sub">${c.adm || ''}</div></div><button class="cs-del" title="删除">✕</button></div>`).join('');
+  box.querySelectorAll('.cs-item').forEach((el, i) => { el.onclick = (e) => { if (e.target.closest('.cs-del')) return; switchCity(i); }; const del = el.querySelector('.cs-del'); if (del) del.onclick = (e) => { e.stopPropagation(); removeCity(i); }; });
 }
-function closeSearch() { document.getElementById('searchPanel').classList.remove('show'); }
-function onSearchInput() {
-  clearTimeout(searchTimer);
-  const q = document.getElementById('searchInput').value.trim();
-  const box = document.getElementById('searchResults');
-  if (!q) { box.classList.remove('show'); return; }
-  searchTimer = setTimeout(() => geolookup(q, false), 300);
-}
-async function geolookup(name, silent) {
+let citySearchTimer = null;
+function onCitySearch() { clearTimeout(citySearchTimer); const q = document.getElementById('citySearchInput').value.trim(); if (!q) { renderCityList(); return; } citySearchTimer = setTimeout(() => searchCityForAdd(q), 300); }
+async function searchCityForAdd(q) {
   if (!state.apiKey) { openSettings(); return; }
-  const { geo } = getHosts();
-  const box = document.getElementById('searchResults');
-  if (!silent) { box.innerHTML = '<div class="search-item">搜索中…</div>'; box.classList.add('show'); }
+  const { geo } = getHosts(); const box = document.getElementById('cityList');
+  box.innerHTML = '<div class="cs-empty">搜索中…</div>';
   try {
-    const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent(name)}&number=5&lang=zh&key=${state.apiKey}`);
-    if (data.code !== '200' || !data.location?.length) { if (!silent) box.innerHTML = '<div class="search-item">未找到城市</div>'; return; }
-    if (silent) selectCity(data.location[0]); else renderSearchResults(data.location);
-  } catch (e) { if (!silent) box.innerHTML = `<div class="search-item">请求失败：${e.message}</div>`; }
+    const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent(q)}&number=8&lang=zh&key=${state.apiKey}`);
+    if (data.code !== '200' || !data.location?.length) { box.innerHTML = '<div class="cs-empty">未找到城市</div>'; return; }
+    box.innerHTML = data.location.map(loc => { const exists = state.cities.some(c => c.id === loc.id); const sub = [loc.adm2, loc.adm1].filter(Boolean).join(' · '); return `<div class="cs-item"><div class="cs-info"><div class="cs-name">${loc.name}${exists ? '<span class="cs-tag">已添加</span>' : ''}</div><div class="cs-sub">${sub}</div></div><div class="cs-add-icon">${exists ? '✓' : '+'}</div></div>`; }).join('');
+    box.querySelectorAll('.cs-item').forEach((el, i) => { const loc = data.location[i]; el.onclick = () => addCity({ id: loc.id, name: loc.name, adm: [loc.adm2, loc.adm1].filter(Boolean).join(' · '), lon: parseFloat(loc.lon), lat: parseFloat(loc.lat) }); });
+  } catch (e) { box.innerHTML = `<div class="cs-empty">请求失败：${e.message}</div>`; }
 }
-function renderSearchResults(list) {
-  const box = document.getElementById('searchResults'); box.innerHTML = '';
-  list.forEach(loc => {
-    const d = document.createElement('div'); d.className = 'search-item';
-    d.innerHTML = `${loc.name}<span class="s-sub">${[loc.adm2, loc.adm1].filter(Boolean).join(' · ')}</span>`;
-    d.onclick = () => selectCity(loc); box.appendChild(d);
-  });
-  box.classList.add('show');
-}
-function selectCity(loc) {
-  state.locationId = loc.id; state.cityName = loc.name;
-  state.lon = parseFloat(loc.lon); state.lat = parseFloat(loc.lat);
-  localStorage.setItem(KEY_CITY, JSON.stringify({ id:loc.id, name:loc.name, lon:loc.lon, lat:loc.lat }));
-  closeSearch(); loadWeather();
-}
+function addCity(city) { const idx = state.cities.findIndex(c => c.id === city.id); if (idx >= 0) { state.activeIndex = idx; } else { state.cities.push(city); state.activeIndex = state.cities.length - 1; } saveCities(); closeCityPanel(); loadWeather(); }
+function switchCity(i) { if (i < 0 || i >= state.cities.length) return; if (i === state.activeIndex) { closeCityPanel(); return; } state.activeIndex = i; saveCities(); closeCityPanel(); loadWeather(); }
+function removeCity(i) { if (state.cities.length <= 1) { alert('至少保留一个城市'); return; } state.cities.splice(i, 1); if (state.activeIndex > i) state.activeIndex--; else if (state.activeIndex === i) state.activeIndex = Math.min(i, state.cities.length - 1); saveCities(); renderCityList(); loadWeather(); }
 
-/* ================================================================
-   定位
-   ================================================================ */
 function initLocation() {
   if (!state.apiKey) { document.getElementById('homeContent').innerHTML = '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>'; openSettings(); return; }
-  if (state.locationId) { loadWeather(); return; }
+  if (state.cities.length) { loadWeather(); return; }
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>正在定位…</div>';
-  if (!navigator.geolocation) { geolookup('北京', true); return; }
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      const lon = pos.coords.longitude.toFixed(2), lat = pos.coords.latitude.toFixed(2);
-      const { geo } = getHosts();
-      try {
-        const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${lon},${lat}&number=1&lang=zh&key=${state.apiKey}`);
-        data.code === '200' && data.location?.length ? selectCity(data.location[0]) : geolookup('北京', true);
-      } catch { geolookup('北京', true); }
-    },
-    () => geolookup('北京', true),
-    { timeout: 6000, maximumAge: 600000 }
-  );
+  if (!navigator.geolocation) { fallbackBeijing(); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lon = pos.coords.longitude.toFixed(2), lat = pos.coords.latitude.toFixed(2); const { geo } = getHosts();
+    try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${lon},${lat}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat) }); } else fallbackBeijing(); } catch { fallbackBeijing(); }
+  }, () => fallbackBeijing(), { timeout: 6000, maximumAge: 600000 });
+}
+async function fallbackBeijing() {
+  const { geo } = getHosts();
+  try { const data = await fetchJson(`${geo}/geo/v2/city/lookup?location=${encodeURIComponent('北京')}&number=1&lang=zh&key=${state.apiKey}`); if (data.code === '200' && data.location?.length) { const l = data.location[0]; addCity({ id:l.id, name:l.name, adm:[l.adm2,l.adm1].filter(Boolean).join(' · '), lon:parseFloat(l.lon), lat:parseFloat(l.lat) }); } else { document.getElementById('homeContent').innerHTML = '<div class="loading">定位失败，请点击顶部手动添加城市</div>'; } } catch (e) { document.getElementById('homeContent').innerHTML = `<div class="loading">加载失败：${e.message}</div>`; }
 }
 
-/* ================================================================
-   天气加载
-   ================================================================ */
 async function loadWeather() {
+  const city = getActiveCity();
+  if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
+  const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
-  if (!state.locationId) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先搜索城市</div>'; return; }
-
-  const { api } = getHosts();
-  const key = state.apiKey, loc = state.locationId;
-  const coord = state.lon && state.lat ? `${state.lon},${state.lat}` : null;
-
+  const { api } = getHosts(); const key = state.apiKey, loc = city.id;
+  const coord = city.lon && city.lat ? `${city.lon},${city.lat}` : null;
   const tasks = [
     fetchJson(`${api}/v7/weather/now?location=${loc}&key=${key}`),
     fetchJson(`${api}/v7/weather/24h?location=${loc}&key=${key}`),
@@ -413,19 +353,13 @@ async function loadWeather() {
     fetchJson(`${api}/v7/air/now?location=${loc}&key=${key}`),
     fetchJson(`${api}/v7/indices/1d?location=${loc}&type=0&key=${key}`),
   ];
-  if (coord) {
-    tasks.push(fetchJson(`${api}/weatheralert/v1/current/${state.lat}/${state.lon}?key=${key}`));
-    tasks.push(fetchJson(`${api}/v7/minutely/5m?location=${coord}&key=${key}`));
-  } else {
-    tasks.push(Promise.resolve(null)); tasks.push(Promise.resolve(null));
-  }
+  if (coord) { tasks.push(fetchJson(`${api}/weatheralert/v1/current/${city.lat}/${city.lon}?key=${key}`)); tasks.push(fetchJson(`${api}/v7/minutely/5m?location=${coord}&key=${key}`)); } else { tasks.push(Promise.resolve(null)); tasks.push(Promise.resolve(null)); }
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
-
   const r = await Promise.allSettled(tasks);
+  if (seq !== loadSeq) return;
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
   const dailyData = r[2].status==='fulfilled' ? r[2].value : null;
-
   if (!nowData || nowData.code !== '200' || !dailyData || dailyData.code !== '200') {
     const code = nowData?.code || dailyData?.code || 'NETWORK';
     let msg = `加载失败（${code}）`;
@@ -433,9 +367,8 @@ async function loadWeather() {
     document.getElementById('homeContent').innerHTML = `<div class="loading">${msg}<br><button class="btn btn-ghost" style="max-width:160px;margin:12px auto 0" onclick="loadWeather()">重试</button></div>`;
     return;
   }
-
   state.data = {
-    now: nowData.now,
+    city, now: nowData.now,
     hourly: r[1].status==='fulfilled' && r[1].value?.code==='200' ? r[1].value.hourly : [],
     daily: dailyData.daily,
     air: r[3].status==='fulfilled' && r[3].value?.code==='200' ? r[3].value.now : null,
@@ -445,21 +378,17 @@ async function loadWeather() {
     sun: r[7].status==='fulfilled' && r[7].value?.code==='200' ? r[7].value.daily?.[0] : null,
     moon: r[8].status==='fulfilled' && r[8].value?.code==='200' ? r[8].value.moonPhase?.[0] : null,
   };
-
   renderAll();
 }
 
-/* ================================================================
-   渲染
-   ================================================================ */
 function renderAll() {
-  const d = state.data;
-  if (!d) return;
+  const d = state.data; if (!d) return;
   setTheme(d.now.icon);
-  document.getElementById('cityName').innerHTML = `${state.cityName} <small>${d.daily[0]?.fxDate || ''}</small>`;
-
+  document.getElementById('cityName').innerHTML = `${d.city.name} <small>▼ 切换</small>`;
   document.getElementById('homeContent').innerHTML = buildHome(d);
   document.getElementById('rainContent').innerHTML = buildRainPage(d.minutely);
+  document.getElementById('warningContent').innerHTML = buildWarningPage(d.warnings);
+  document.getElementById('indicesContent').innerHTML = buildIndicesPage(d.indices);
   document.getElementById('detailContent').innerHTML = buildDetailPage(d);
 }
 
@@ -472,16 +401,62 @@ function setTheme(iconCode) {
   else document.body.classList.add('theme-cloudy');
 }
 
-/* ---------- 首页 ---------- */
+/* ===== 图标解析与着色 ===== */
+const KNOWN_ICONS = new Set(['100','101','102','103','104','150','151','152','153','300','301','302','303','304','305','306','307','308','309','310','311','312','313','314','315','316','317','318','399','400','401','402','403','404','405','406','407','408','409','410','499','500','501','502','503','504','507','508','509','510','511','512','513','514','515','900','901','999']);
+
+function resolveIcon(code) {
+  const c = String(code || '').trim();
+  if (KNOWN_ICONS.has(c)) return c;
+  const n = parseInt(c, 10);
+  if (!isNaN(n)) {
+    if (n >= 300 && n < 400) return '399';
+    if (n >= 400 && n < 500) return '499';
+    if (n >= 500 && n < 600) return '501';
+    if (n >= 100 && n < 200) return '104';
+  }
+  return '999';
+}
+
+function iconColorClass(code) {
+  const n = parseInt(resolveIcon(code), 10);
+  if (isNaN(n)) return 'ic-default';
+  if (n === 100 || n === 150) return 'ic-sunny';
+  if (n >= 101 && n <= 104) return 'ic-cloud';
+  if (n >= 300 && n < 400) return 'ic-rain';
+  if (n >= 400 && n < 500) return 'ic-snow';
+  if (n >= 500 && n < 600) return 'ic-fog';
+  return 'ic-default';
+}
+
+function iconHtml(code, extraClass = '') {
+  const resolved = resolveIcon(code);
+  const color = iconColorClass(code);
+  return `<i class="qi-${resolved} ${color} ${extraClass}"></i>`;
+}
+
+/* 着色类 */
+const iconStyle = document.createElement('style');
+iconStyle.textContent = `
+  .ic-sunny  { color: var(--icon-sunny); }
+  .ic-rain   { color: var(--icon-rain); }
+  .ic-snow   { color: var(--icon-snow); }
+  .ic-fog    { color: var(--icon-fog); }
+  .ic-cloud  { color: var(--icon-cloud); }
+  .ic-default{ color: var(--icon-default); }
+`;
+document.head.appendChild(iconStyle);
+
+/* ===== 首页 ===== */
 function buildHome(d) {
   const today = d.daily[0] || {};
   const hasRain = checkHasRain(d.minutely);
   return `
-    ${buildWarning(d.warnings)}
+    ${buildWarningBanner(d.warnings)}
     <div class="hero">
+      <div class="main-weather-icon">${iconHtml(d.now.icon)}</div>
       <div class="temp">${d.now.temp}<sup>°</sup></div>
       <div class="condition">${d.now.text}</div>
-      <div class="feels-like">体感 ${d.now.feelsLike}°</div>
+      <div class="feels-like">体感 ${d.now.feelsLike}° · ${today.fxDate || ''}</div>
       <div class="hi-lo"><span>最高 ${today.tempMax}°</span><span>最低 ${today.tempMin}°</span></div>
     </div>
     ${hasRain ? buildRainBanner(d.minutely) : ''}
@@ -491,7 +466,7 @@ function buildHome(d) {
   `;
 }
 
-function buildWarning(alerts) {
+function buildWarningBanner(alerts) {
   if (!alerts?.length) return '';
   const a = alerts[0];
   const SEV = { minor:'一般', moderate:'较重', severe:'严重', extreme:'特别严重' };
@@ -502,8 +477,7 @@ function buildWarning(alerts) {
   const instr = a.instruction || '';
   const expire = a.expireTime || a.endTime || '';
   return `<div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')">
-    <span class="w-icon">⚠</span>
-    <span class="w-title">${title}</span>
+    <span class="w-icon">⚠</span><span class="w-title">${title}</span>
     <span class="w-severity">${sev}${color ? ' · ' + color : ''}</span>
     <div class="warning-detail">
       ${desc ? '<div>' + desc + '</div>' : ''}
@@ -519,14 +493,9 @@ function checkHasRain(m) {
   if (m.minutely && m.minutely.some(x => parseFloat(x.precip) > 0)) return true;
   return false;
 }
-
 function buildRainBanner(m) {
   const summary = m.summary || '未来 2 小时有降水';
-  return `<div class="rain-banner" onclick="switchTab('rain')">
-    <span class="rb-icon">🌧</span>
-    <span class="rb-text">${summary}</span>
-    <span class="rb-arrow">›</span>
-  </div>`;
+  return `<div class="rain-banner" onclick="switchTab('rain')"><span class="rb-icon">🌧</span><span class="rb-text">${summary}</span><span class="rb-arrow">›</span></div>`;
 }
 
 function buildHourly(hourly) {
@@ -536,8 +505,7 @@ function buildHourly(hourly) {
     const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
     const pop = parseInt(h.pop, 10) || 0;
     return `<div class="hour-item ${i === 0 ? 'now' : ''}">
-      <div class="h-time">${label}</div>
-      <div class="h-icon"><i class="qi-${h.icon}"></i></div>
+      <div class="h-time">${label}</div><div class="h-icon">${iconHtml(h.icon)}</div>
       <div class="h-temp">${h.temp}°</div>
       ${pop > 0 ? `<div class="h-pop">降水 ${pop}%</div><div class="h-pop-bar"><div style="width:${Math.min(pop,100)}%"></div></div>` : ''}
     </div>`;
@@ -546,7 +514,6 @@ function buildHourly(hourly) {
 }
 
 const UV_CN = v => { const n = parseInt(v, 10); if (isNaN(n)) return ''; return n <= 2 ? '弱' : n <= 4 ? '中等' : n <= 6 ? '强' : n <= 9 ? '很强' : '极强'; };
-
 function buildDaily(daily) {
   if (!daily?.length) return '';
   const lows = daily.map(d => parseInt(d.tempMin, 10)), highs = daily.map(d => parseInt(d.tempMax, 10));
@@ -561,8 +528,7 @@ function buildDaily(daily) {
     if (d.precip && parseFloat(d.precip) > 0) meta.push(`降水 ${d.precip}毫米`);
     if (d.uvIndex) meta.push(`紫外线 ${UV_CN(d.uvIndex)}`);
     return `<div class="day-row">
-      <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div>
-      <div class="day-icon"><i class="qi-${d.iconDay}"></i></div>
+      <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div><div class="day-icon">${iconHtml(d.iconDay)}</div>
       <div class="day-rain">${meta.join('<br>')}</div>
       <div class="day-bar-wrap"><span class="day-lo">${lo}°</span>
         <div class="bar-track"><div class="bar-fill" style="left:${left}%;width:${width}%"></div></div>
@@ -572,54 +538,35 @@ function buildDaily(daily) {
   return `<div class="daily-card glass">${rows}</div>`;
 }
 
-/* ---------- 降雨页 ---------- */
 function buildRainPage(m) {
-  if (!m || (!m.summary && !m.minutely?.length)) {
-    return `<div class="rain-empty">
-      <div class="re-icon">☀️</div>
-      当前无降水<br>
-      <span style="font-size:12px;opacity:0.6">未来 2 小时内暂无降水数据</span>
-    </div>`;
-  }
+  if (!m || (!m.summary && !m.minutely?.length)) return `<div class="rain-empty"><div class="re-icon">☀️</div>当前无降水<br><span style="font-size:12px;opacity:0.6">未来 2 小时内暂无降水数据</span></div>`;
   const summary = m.summary || '未来 2 小时降水情况';
+  const max = Math.max(...m.minutely.map(y => parseFloat(y.precip) || 0), 0.1);
   const bars = m.minutely?.map((x, i) => {
-    const v = parseFloat(x.precip) || 0;
-    const max = Math.max(...m.minutely.map(y => parseFloat(y.precip) || 0), 0.1);
-    const h = v > 0 ? Math.max((v / max) * 100, 5) : 0;
-    const t = new Date(x.fxTime);
-    const label = i % 6 === 0 ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` : '';
-    return `<div class="rain-bar-wrap">
-      <div class="rain-bar" style="height:${h}%"></div>
-      ${label ? `<div class="rain-time">${label}</div>` : ''}
-    </div>`;
+    const v = parseFloat(x.precip) || 0; const h = v > 0 ? Math.max((v / max) * 100, 5) : 0;
+    const t = new Date(x.fxTime); const label = i % 6 === 0 ? `${t.getHours()}:${String(t.getMinutes()).padStart(2, '0')}` : '';
+    return `<div class="rain-bar-wrap"><div class="rain-bar" style="height:${h}%"></div>${label ? `<div class="rain-time">${label}</div>` : ''}</div>`;
   }).join('') || '';
-
-  return `
-    <div class="rain-summary glass">
-      <div class="rs-title">未来 2 小时</div>
-      ${summary}
-    </div>
-    <div class="rain-chart-card glass">
-      <div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div>
-      <div class="rain-chart">
-        <div class="rain-chart-baseline"></div>
-        ${bars}
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">
-      柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。
-    </div>
-  `;
+  return `<div class="rain-summary glass"><div class="rs-title">未来 2 小时</div>${summary}</div><div class="rain-chart-card glass"><div class="section-label" style="padding-left:0">降水趋势（每 5 分钟）</div><div class="rain-chart"><div class="rain-chart-baseline"></div>${bars}</div></div><div style="font-size:11px;color:var(--text-secondary);text-align:center;line-height:1.6;padding:0 20px">柱状高度表示降水量，越高的柱子代表雨势越大。<br>数据每 5 分钟更新一次。</div>`;
 }
 
-/* ---------- 详情页 ---------- */
+function buildWarningPage(warnings) {
+  if (!warnings?.length) return `<div class="rain-empty"><div class="re-icon">✅</div>当前无气象预警<br><span style="font-size:12px;opacity:0.6">所在地区暂无生效中的预警信息</span></div>`;
+  const SEV = { minor:'一般', moderate:'较重', severe:'严重', extreme:'特别严重' };
+  return `<div class="section-label" style="margin-top:16px">生效中的预警（${warnings.length}）</div>` + warnings.map(a => {
+    const title = a.headline || a.title || '气象预警'; const sev = SEV[a.severity] || a.severity || ''; const color = a.color?.code || ''; const desc = a.description || a.text || ''; const instr = a.instruction || ''; const expire = a.expireTime || a.endTime || '';
+    return `<div class="warning-list-item"><div class="warning-banner" onclick="this.querySelector('.warning-detail').classList.toggle('show')"><span class="w-icon">⚠</span><span class="w-title">${title}</span><span class="w-severity">${sev}${color ? ' · ' + color : ''}</span><div class="warning-detail">${desc ? '<div>' + desc + '</div>' : ''}${instr ? '<div style="margin-top:6px;color:#ffd166">防御指南：' + instr + '</div>' : ''}${expire ? '<div style="margin-top:6px;font-size:11px;opacity:0.6">有效期至 ' + expire + '</div>' : ''}</div></div></div>`;
+  }).join('');
+}
+
+function buildIndicesPage(indices) {
+  if (!indices?.length) return `<div class="rain-empty"><div class="re-icon">📋</div>暂无生活指数数据</div>`;
+  const cards = indices.map(x => `<div class="index-card glass"><div class="idx-type">${x.name || x.typeName}</div><div class="idx-category">${x.category}</div><div class="idx-text">${x.text || ''}</div></div>`).join('');
+  return `<div class="section-label" style="margin-top:16px">生活指数（共 ${indices.length} 项）</div><div class="indices-grid">${cards}</div>`;
+}
+
 function buildDetailPage(d) {
-  return `
-    <div class="section-label" style="margin-top:16px">详细指标</div>
-    ${buildMetrics(d.now, d.air)}
-    ${buildIndices(d.indices)}
-    ${buildAstro(d.sun, d.moon)}
-  `;
+  return `<div class="section-label" style="margin-top:16px">详细指标</div>${buildMetrics(d.now, d.air)}${buildAstro(d.sun, d.moon)}<div class="map-entry glass" onclick="window.open('https://www.qweather.com/weather-map/', '_blank')"><span class="me-text">🗺️ 天气地图（雷达 / 风场 / 温度图层）</span><span class="me-arrow">›</span></div>`;
 }
 
 function buildMetrics(now, air) {
@@ -628,122 +575,37 @@ function buildMetrics(now, air) {
   cards.push(metricCard('风速', `${now.windSpeed}<small>公里/小时</small>`, `${now.windDir || ''} ${now.windScale || '—'}级`));
   cards.push(metricCard('气压', `${now.pressure}<small>百帕</small>`, '海平面气压'));
   cards.push(metricCard('能见度', `${now.vis}<small>公里</small>`, '水平能见度'));
-
   if (air) {
-    const aqi = parseInt(air.aqi, 10) || 0;
-    const pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
+    const aqi = parseInt(air.aqi, 10) || 0; const pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
     const AIR_CN = aqi <= 50 ? '优' : aqi <= 100 ? '良' : aqi <= 150 ? '轻度污染' : aqi <= 200 ? '中度污染' : aqi <= 300 ? '重度污染' : '严重污染';
     const POLL = { pm2p5:'PM2.5', pm10:'PM10', o3:'臭氧', no2:'二氧化氮', so2:'二氧化硫', co:'一氧化碳' };
-    cards.push(`<div class="metric-card glass" style="grid-column:span 2">
-      <div class="m-label">空气质量 · ${AIR_CN}</div>
-      <div class="m-value">${air.aqi}<small>AQI</small></div>
-      <div class="m-sub">首要污染物：${POLL[air.primary] || air.primary || '—'}</div>
-      <div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div>
-    </div>`);
+    cards.push(`<div class="metric-card glass" style="grid-column:span 2"><div class="m-label">空气质量 · ${AIR_CN}</div><div class="m-value">${air.aqi}<small>AQI</small></div><div class="m-sub">首要污染物：${POLL[air.primary] || air.primary || '—'}</div><div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div></div>`);
   }
   return `<div class="metrics-grid">${cards.join('')}</div>`;
 }
 
-function buildIndices(indices) {
-  if (!indices?.length) return '';
-  const cards = indices.map(x => `<div class="index-card glass">
-    <div class="idx-type">${x.name || x.typeName}</div>
-    <div class="idx-category">${x.category}</div>
-    <div class="idx-text">${x.text || ''}</div>
-  </div>`).join('');
-  return `<div class="section-label">生活指数</div><div class="indices-row">${cards}</div>`;
-}
-
-function fmtTime(iso) {
-  if (!iso) return '—';
-  const m = String(iso).match(/T(\d{2}:\d{2})/);
-  return m ? m[1] : String(iso).slice(0, 5);
-}
+function fmtTime(iso) { if (!iso) return '—'; const m = String(iso).match(/T(\d{2}:\d{2})/); return m ? m[1] : String(iso).slice(0, 5); }
 function buildAstro(sun, moon) {
   if (!sun && !moon) return '';
   const items = [];
-  if (sun) {
-    items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`);
-    items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`);
-  }
-  if (moon) {
-    items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`);
-    items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`);
-  }
+  if (sun) { items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`); items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`); }
+  if (moon) { items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`); items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`); }
   return `<div class="section-label">天文</div><div class="astro-card glass">${items.join('')}</div>`;
 }
 
-function metricCard(label, value, sub) {
-  return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`;
-}
+function metricCard(label, value, sub) { return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`; }
 
-/* ================================================================
-   手势：横向滑动切换 / 下拉刷新
-   ================================================================ */
 const viewsEl = document.getElementById('views');
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
-let pullStartY = 0, pulling = false, pullDist = 0;
+viewsEl.addEventListener('touchstart', e => { if (e.target.closest('.hourly-scroll, .indices-grid, .rain-chart, .cs-list')) return; const t = e.touches[0]; swipeStartX = t.clientX; swipeStartY = t.clientY; swiping = true; }, { passive: true });
+viewsEl.addEventListener('touchend', e => { if (!swiping) return; swiping = false; const t = e.changedTouches[0]; const dx = t.clientX - swipeStartX, dy = t.clientY - swipeStartY; if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) { const idx = TABS.indexOf(currentTab); if (dx < 0 && idx < TABS.length - 1) switchTab(TABS[idx + 1]); if (dx > 0 && idx > 0) switchTab(TABS[idx - 1]); } }, { passive: true });
 
-viewsEl.addEventListener('touchstart', e => {
-  if (e.target.closest('.hourly-scroll, .indices-row, .rain-chart')) return;
-  const t = e.touches[0];
-  swipeStartX = t.clientX; swipeStartY = t.clientY; swiping = true;
-  if (window.scrollY <= 0) { pullStartY = t.clientY; pulling = true; pullDist = 0; }
-}, { passive: true });
-
-viewsEl.addEventListener('touchmove', e => {
-  if (!pulling) return;
-  const dy = e.touches[0].clientY - pullStartY;
-  if (dy > 0) {
-    pullDist = dy;
-    const ind = document.getElementById('pullIndicator');
-    if (dy > 60) ind.classList.add('show');
-    else ind.classList.remove('show');
-  }
-}, { passive: true });
-
-viewsEl.addEventListener('touchend', e => {
-  const t = e.changedTouches[0];
-  // 横向滑动
-  if (swiping) {
-    swiping = false;
-    const dx = t.clientX - swipeStartX;
-    const dy = t.clientY - swipeStartY;
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      const tabs = ['home', 'rain', 'detail'];
-      const idx = tabs.indexOf(currentTab);
-      if (dx < 0 && idx < tabs.length - 1) switchTab(tabs[idx + 1]);
-      if (dx > 0 && idx > 0) switchTab(tabs[idx - 1]);
-    }
-  }
-  // 下拉刷新
-  if (pulling) {
-    pulling = false;
-    const ind = document.getElementById('pullIndicator');
-    if (pullDist > 60) {
-      ind.classList.remove('show');
-      ind.classList.add('spinning');
-      loadWeather().finally(() => {
-        setTimeout(() => ind.classList.remove('spinning'), 400);
-      });
-    } else {
-      ind.classList.remove('show');
-    }
-    pullDist = 0;
-  }
-}, { passive: true });
-
-/* ================================================================
-   初始化
-   ================================================================ */
 (function init() {
   loadSettings();
   const hash = location.hash.slice(1);
-  if (['home','rain','detail'].includes(hash)) switchTab(hash, false);
-  if (!state.apiKey) {
-    document.getElementById('homeContent').innerHTML = '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>';
-    openSettings();
-  } else { initLocation(); }
+  if (TABS.includes(hash)) switchTab(hash, false);
+  if (!state.apiKey) { document.getElementById('homeContent').innerHTML = '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>'; openSettings(); }
+  else { initLocation(); }
 })();
 document.getElementById('settingsOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
 </script>
