@@ -1,247 +1,828 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f7fb">
-  <title>网络诊断</title>
-  <style>
-    :root {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        "Microsoft YaHei", sans-serif;
-      color: #182230;
-      background: #f5f7fb;
-      --blue: #2162dc;
-      --muted: #687588;
-      --border: #e5eaf1;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>和风天气</title>
+<link rel="stylesheet" href="https://cdn.qweather.com/icons/qweather-icons.css">
+<style>
+  :root {
+    --bg-a: #1a2a4a;
+    --bg-b: #2d4a6b;
+    --bg-c: #4a6fa5;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255,255,255,0.65);
+    --glass-bg: rgba(255,255,255,0.10);
+    --glass-border: rgba(255,255,255,0.18);
+    --glass-blur: 20px;
+    --radius-card: 20px;
+    --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
 
-    * { box-sizing: border-box; }
-    body { margin: 0; }
-    .container { width: min(920px, calc(100% - 32px)); margin: auto; }
+  .theme-clear  { --bg-a:#1e4a7a; --bg-b:#3a7bc8; --bg-c:#6aace0; }
+  .theme-cloudy { --bg-a:#2a3a4a; --bg-b:#4a5a6a; --bg-c:#7a8a9a; }
+  .theme-rain   { --bg-a:#1a2a3a; --bg-b:#2a4a5a; --bg-c:#4a6a7a; }
+  .theme-snow   { --bg-a:#3a4a5a; --bg-b:#5a7a9a; --bg-c:#8aaac0; }
+  .theme-night  { --bg-a:#0a1220; --bg-b:#152030; --bg-c:#1e2a40; }
 
-    header {
-      background: #fff;
-      border-bottom: 1px solid var(--border);
-    }
+  * { margin:0; padding:0; box-sizing:border-box; }
 
-    .topbar {
-      min-height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
+  body {
+    font-family: var(--font-stack);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background: linear-gradient(160deg, var(--bg-a) 0%, var(--bg-b) 45%, var(--bg-c) 100%);
+    transition: background 1.2s ease;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 
-    .brand { font-size: 19px; font-weight: 700; }
-    .brand span { color: var(--blue); margin-right: 8px; }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 40px;
+    position: relative;
+  }
 
-    main { padding: 30px 0 48px; }
-    .hero { margin-bottom: 20px; }
-    .hero h1 { font-size: 28px; margin: 0 0 8px; }
-    .hero p { color: var(--muted); line-height: 1.6; margin: 0; }
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-card);
+  }
 
-    .card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 21px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 16px rgb(25 45 75 / 4%);
-    }
+  /* 顶部栏 */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .topbar .city {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+  }
+  .topbar .city small {
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 6px;
+  }
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .icon-btn:active { background: rgba(255,255,255,0.22); }
 
-    .card h2 { font-size: 17px; margin: 0 0 17px; }
+  /* 搜索面板 */
+  .search-panel {
+    position: absolute;
+    top: 64px; left: 16px; right: 16px;
+    z-index: 60;
+    display: none;
+  }
+  .search-panel.show { display: block; }
+  .search-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 8px 8px 16px;
+    gap: 8px;
+  }
+  .search-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 15px;
+    font-family: var(--font-stack);
+  }
+  .search-bar input::placeholder { color: rgba(255,255,255,0.4); }
+  .search-bar button {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: var(--font-stack);
+  }
+  .search-results {
+    margin-top: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+    border-radius: 16px;
+  }
+  .search-results.show { display: block; }
+  .search-item {
+    padding: 14px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .search-item:last-child { border-bottom: none; }
+  .search-item:active { background: rgba(255,255,255,0.12); }
+  .search-item .s-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-left: 8px;
+  }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px 22px;
-    }
+  /* 当前天气 */
+  .hero {
+    text-align: center;
+    padding: 32px 0 24px;
+  }
+  .hero .temp {
+    font-size: clamp(76px, 22vw, 104px);
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: -4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero .temp sup {
+    font-size: 32px;
+    font-weight: 300;
+    vertical-align: super;
+    letter-spacing: 0;
+  }
+  .hero .condition {
+    font-size: 18px;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+  .hero .feels-like {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+  .hero .hi-lo {
+    display: inline-flex;
+    gap: 14px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
 
-    .label {
-      color: var(--muted);
-      display: block;
-      font-size: 13px;
-      margin-bottom: 6px;
-    }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: 0 4px 8px;
+  }
 
-    .value {
-      min-height: 23px;
-      font-size: 15px;
-      font-weight: 600;
-      overflow-wrap: anywhere;
-    }
+  /* 逐小时 */
+  .hourly-card {
+    padding: 16px 0 14px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .hourly-scroll {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 0 16px;
+    scrollbar-width: none;
+  }
+  .hourly-scroll::-webkit-scrollbar { display: none; }
+  .hour-item {
+    flex: 0 0 62px;
+    text-align: center;
+    scroll-snap-align: start;
+    position: relative;
+    padding-bottom: 8px;
+  }
+  .hour-item .h-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .hour-item .h-icon {
+    font-size: 22px;
+    margin-bottom: 6px;
+    line-height: 1;
+  }
+  .hour-item .h-temp {
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .hour-item.now .h-time { color:#fff; font-weight:600; }
+  .hour-item.now::after {
+    content:'';
+    position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+    width: 18px; height: 2px; border-radius: 1px;
+    background: #fff;
+  }
 
-    .muted { color: var(--muted); font-weight: 400; }
-    .good { color: #14804a; }
-    .warn { color: #a76000; }
-    .error { color: #bd3434; }
+  /* 7 天预报 */
+  .daily-card {
+    padding: 6px 16px;
+    margin-bottom: 18px;
+  }
+  .day-row {
+    display: flex;
+    align-items: center;
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .day-row:last-child { border-bottom: none; }
+  .day-name {
+    width: 48px;
+    font-size: 14px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .day-name.today { color: #fff; font-weight: 700; }
+  .day-icon {
+    width: 34px;
+    text-align: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .day-rain {
+    width: 38px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .day-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 10px;
+    min-width: 0;
+  }
+  .day-lo, .day-hi {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .day-lo { text-align: right; }
+  .day-hi { text-align: left; color:#fff; font-weight:600; }
+  .bar-track {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.12);
+    position: relative;
+    overflow: hidden;
+    min-width: 40px;
+  }
+  .bar-fill {
+    position: absolute;
+    top: 0; bottom: 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #7ec8e3, #ffd166);
+    opacity: 0.85;
+  }
 
-    .detail {
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.65;
-      margin: 12px 0 0;
-    }
+  /* 指标网格 */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .metric-card {
+    padding: 14px 16px;
+    border-radius: 16px;
+  }
+  .metric-card .m-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .metric-card .m-value {
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric-card .m-value small {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-left: 3px;
+  }
+  .metric-card .m-sub {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+  .aqi-bar {
+    height: 3px; border-radius: 2px; margin-top:8px;
+    background: linear-gradient(90deg,#6bcf7f,#ffd93d,#ff9f43,#ff6b6b,#a55eea);
+    position: relative;
+  }
+  .aqi-dot {
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+    width: 8px; height: 8px; border-radius: 50%;
+    background:#fff; border:1.5px solid rgba(0,0,0,0.25);
+  }
 
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 39px;
-      border: 0;
-      border-radius: 8px;
-      padding: 8px 14px;
-      color: #fff;
-      background: var(--blue);
-      font: inherit;
-      text-decoration: none;
-      cursor: pointer;
-    }
+  /* 设置面板 */
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+  }
+  .settings-overlay.show { display: flex; }
+  .settings-panel {
+    width: 100%;
+    max-width: 380px;
+    padding: 24px;
+    border-radius: 24px;
+    background: rgba(28,36,52,0.94);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  .settings-panel h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .settings-panel .hint {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .settings-panel label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .settings-panel input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    font-size: 14px;
+    font-family: var(--font-stack);
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 14px;
+  }
+  .settings-panel input:focus { border-color: rgba(255,255,255,0.45); }
+  .settings-panel input::placeholder { color: rgba(255,255,255,0.3); }
+  .settings-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font-stack);
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:active { opacity: 0.75; }
+  .btn-primary { background: #fff; color: #1a2a4a; }
+  .btn-ghost { background: rgba(255,255,255,0.10); color: #fff; border: 1px solid rgba(255,255,255,0.15); }
 
-    .button:hover { background: #174fb9; }
-    .button:disabled { opacity: .6; cursor: wait; }
+  .loading {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .spinner {
+    width: 24px; height: 24px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-    .secondary {
-      color: var(--blue);
-      background: #edf3ff;
-      min-height: 34px;
-      padding: 6px 11px;
-      font-size: 14px;
-    }
-
-    .alert {
-      display: none;
-      background: #fff1f1;
-      border: 1px solid #f2cccc;
-      color: #a72c2c;
-      border-radius: 8px;
-      padding: 12px 14px;
-      margin-bottom: 15px;
-      font-size: 13px;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
-    }
-
-    .candidate-list {
-      color: var(--muted);
-      font-size: 13px;
-      overflow-wrap: anywhere;
-    }
-
-    .candidate-list li { margin: 6px 0; }
-    .footer { text-align: center; color: var(--muted); font-size: 12px; }
-
-    @media (max-width: 600px) {
-      main { padding-top: 22px; }
-      .grid { grid-template-columns: 1fr; gap: 14px; }
-      .card { padding: 17px; }
-      .hero h1 { font-size: 24px; }
-    }
-  </style>
+  @media (max-width: 380px) {
+    .metrics-grid { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
-
 <body>
-  <header>
-    <div class="container topbar">
-      <div class="brand"><span>●</span>网络诊断</div>
-      <button id="refresh" class="button secondary" type="button">重新检测</button>
+
+<div class="app">
+  <div class="topbar">
+    <div class="city" id="cityName" onclick="openSearch()">
+      选择城市 <small>点击搜索</small>
     </div>
-  </header>
+    <div class="icon-btn" onclick="openSettings()" title="设置">⚙</div>
+  </div>
 
-  <main class="container">
-    <section class="hero">
-      <h1>网络连接检查</h1>
-      <p>自动检测公网 IP、网络位置、IPv6 连通性及 WebRTC 候选地址。</p>
-    </section>
+  <!-- 搜索面板 -->
+  <div class="search-panel" id="searchPanel">
+    <div class="search-bar glass">
+      <input id="searchInput" placeholder="搜索城市，如 北京" autocomplete="off" oninput="onSearchInput()">
+      <button onclick="closeSearch()">取消</button>
+    </div>
+    <div class="search-results glass" id="searchResults"></div>
+  </div>
 
-    <div id="alert" class="alert" role="alert"></div>
+  <div id="mainContent">
+    <div class="loading">
+      <div class="spinner"></div>
+      正在加载…
+    </div>
+  </div>
+</div>
 
-    <section class="card">
-      <h2>公网 IP 与网络信息</h2>
-      <div class="grid">
-        <div>
-          <span class="label">公网 IP</span>
-          <div id="ip" class="value muted">检测中…</div>
-        </div>
-        <div>
-          <span class="label">位置</span>
-          <div id="location" class="value muted">检测中…</div>
-        </div>
-        <div>
-          <span class="label">ISP</span>
-          <div id="isp" class="value muted">检测中…</div>
-        </div>
-        <div>
-          <span class="label">ASN</span>
-          <div id="asn" class="value muted">检测中…</div>
+<!-- 设置面板 -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-panel">
+    <h3>和风天气配置</h3>
+    <p class="hint">
+      前往 console.qweather.com 创建项目获取凭据。<br>
+      新注册用户请填写控制台中的「API Host」（如 xxx.re.qweatherapi.com）；老用户可留空。
+    </p>
+    <label>API Key</label>
+    <input type="text" id="apiKeyInput" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
+    <label>API Host（可选）</label>
+    <input type="text" id="apiHostInput" placeholder="默认 devapi.qweather.com" autocomplete="off" spellcheck="false">
+    <div class="settings-actions">
+      <button class="btn btn-ghost" onclick="closeSettings()">取消</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   状态与常量
+   ================================================================ */
+const KEY_API  = 'qweather_api_key';
+const KEY_HOST = 'qweather_api_host';
+
+const state = {
+  apiKey: '',
+  apiHost: '',
+  locationId: null,
+  cityName: '',
+};
+
+/* ================================================================
+   凭据读写
+   ================================================================ */
+function loadSettings() {
+  state.apiKey  = localStorage.getItem(KEY_API)  || '';
+  state.apiHost = localStorage.getItem(KEY_HOST) || '';
+}
+
+function saveSettings() {
+  const key  = document.getElementById('apiKeyInput').value.trim();
+  const host = document.getElementById('apiHostInput').value.trim();
+  if (!key) { alert('请填写 API Key'); return; }
+  localStorage.setItem(KEY_API, key);
+  localStorage.setItem(KEY_HOST, host);
+  state.apiKey = key;
+  state.apiHost = host;
+  closeSettings();
+  geolookup('北京', true);
+}
+
+function openSettings() {
+  document.getElementById('apiKeyInput').value  = state.apiKey;
+  document.getElementById('apiHostInput').value = state.apiHost;
+  document.getElementById('settingsOverlay').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settingsOverlay').classList.remove('show');
+}
+
+/* ================================================================
+   主机地址解析（兼容新老用户）
+   ================================================================ */
+function getHosts() {
+  const custom = state.apiHost.trim();
+  if (custom) {
+    const h = custom.startsWith('http') ? custom.replace(/\/+$/, '') : `https://${custom.replace(/\/+$/, '')}`;
+    return { geo: h, api: h };
+  }
+  return { geo: 'https://geoapi.qweather.com', api: 'https://devapi.qweather.com' };
+}
+
+/* ================================================================
+   城市搜索
+   ================================================================ */
+let searchTimer = null;
+
+function openSearch() {
+  document.getElementById('searchPanel').classList.add('show');
+  document.getElementById('searchResults').classList.remove('show');
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  setTimeout(() => input.focus(), 100);
+}
+
+function closeSearch() {
+  document.getElementById('searchPanel').classList.remove('show');
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  const q = document.getElementById('searchInput').value.trim();
+  const results = document.getElementById('searchResults');
+  if (!q) { results.classList.remove('show'); return; }
+  searchTimer = setTimeout(() => geolookup(q, false), 300);
+}
+
+async function geolookup(name, silent) {
+  if (!state.apiKey) { openSettings(); return; }
+  const { geo } = getHosts();
+  const results = document.getElementById('searchResults');
+
+  if (!silent) {
+    results.innerHTML = '<div class="search-item">搜索中…</div>';
+    results.classList.add('show');
+  }
+
+  try {
+    const url = `${geo}/geo/v2/city/lookup?location=${encodeURIComponent(name)}&number=5&lang=zh&key=${state.apiKey}`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.code !== '200' || !data.location || !data.location.length) {
+      if (!silent) results.innerHTML = '<div class="search-item">未找到城市</div>';
+      return;
+    }
+
+    if (silent) {
+      selectCity(data.location[0]);
+    } else {
+      renderSearchResults(data.location);
+    }
+  } catch (e) {
+    if (!silent) results.innerHTML = `<div class="search-item">请求失败：${e.message}</div>`;
+  }
+}
+
+function renderSearchResults(list) {
+  const results = document.getElementById('searchResults');
+  results.innerHTML = '';
+  list.forEach(loc => {
+    const div = document.createElement('div');
+    div.className = 'search-item';
+    const sub = [loc.adm2, loc.adm1].filter(Boolean).join(' · ');
+    div.innerHTML = `${loc.name}<span class="s-sub">${sub}</span>`;
+    div.onclick = () => selectCity(loc);
+    results.appendChild(div);
+  });
+  results.classList.add('show');
+}
+
+function selectCity(loc) {
+  state.locationId = loc.id;
+  state.cityName = loc.name;
+  closeSearch();
+  loadWeather();
+}
+
+/* ================================================================
+   天气加载
+   ================================================================ */
+async function loadWeather() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
+
+  if (!state.locationId) {
+    main.innerHTML = '<div class="loading">请先搜索并选择城市</div>';
+    return;
+  }
+
+  const { api } = getHosts();
+  const loc = state.locationId;
+  const key = state.apiKey;
+
+  try {
+    const [nowRes, hourlyRes, dailyRes, airRes] = await Promise.all([
+      fetch(`${api}/v7/weather/now?location=${loc}&key=${key}`),
+      fetch(`${api}/v7/weather/24h?location=${loc}&key=${key}`),
+      fetch(`${api}/v7/weather/7d?location=${loc}&key=${key}`),
+      fetch(`${api}/v7/air/now?location=${loc}&key=${key}`).catch(() => null),
+    ]);
+
+    const nowData    = await nowRes.json();
+    const hourlyData = await hourlyRes.json();
+    const dailyData  = await dailyRes.json();
+    const airData    = airRes ? await airRes.json() : null;
+
+    if (nowData.code !== '200' || dailyData.code !== '200') {
+      const code = nowData.code || dailyData.code;
+      throw new Error(code === '401' || code === '403'
+        ? 'API Key 无效或无权限，请检查设置'
+        : `接口返回异常（${code}）`);
+    }
+
+    const hourly = hourlyData.code === '200' ? hourlyData.hourly : [];
+    const air    = airData && airData.code === '200' ? airData.now : null;
+
+    render(nowData.now, hourly, dailyData.daily, air);
+  } catch (e) {
+    main.innerHTML = `<div class="loading">加载失败：${e.message}<br><br>
+      <button class="btn btn-ghost" style="max-width:160px;margin:0 auto" onclick="loadWeather()">重试</button>
+    </div>`;
+  }
+}
+
+/* ================================================================
+   渲染
+   ================================================================ */
+function render(now, hourly, daily, air) {
+  setTheme(now.icon);
+
+  const today = daily[0] || {};
+  document.getElementById('cityName').innerHTML =
+    `${state.cityName} <small>${today.fxDate || ''}</small>`;
+
+  const heroHTML = `
+    <div class="hero">
+      <div class="temp">${now.temp}<sup>°</sup></div>
+      <div class="condition">${now.text}</div>
+      <div class="feels-like">体感 ${now.feelsLike}°</div>
+      <div class="hi-lo">
+        <span>最高 ${today.tempMax}°</span>
+        <span>最低 ${today.tempMin}°</span>
+      </div>
+    </div>
+  `;
+
+  const hourlyHTML  = buildHourly(hourly);
+  const dailyHTML   = buildDaily(daily);
+  const metricsHTML = buildMetrics(now, air);
+
+  document.getElementById('mainContent').innerHTML =
+    heroHTML + hourlyHTML +
+    '<div class="section-label">7 天预报</div>' + dailyHTML +
+    '<div class="section-label" style="margin-top:18px">详细指标</div>' + metricsHTML;
+}
+
+function setTheme(iconCode) {
+  const body = document.body;
+  const c = String(iconCode);
+  body.className = '';
+  if (c === '150' || c === '151' || c === '153') {
+    body.classList.add('theme-night');
+  } else if (c.startsWith('1')) {
+    body.classList.add('theme-clear');
+  } else if (c.startsWith('3')) {
+    body.classList.add('theme-rain');
+  } else if (c.startsWith('4')) {
+    body.classList.add('theme-snow');
+  } else {
+    body.classList.add('theme-cloudy');
+  }
+}
+
+function buildHourly(hourly) {
+  if (!hourly || !hourly.length) return '';
+  const items = hourly.slice(0, 24).map((h, i) => {
+    const t = new Date(h.fxTime);
+    const label = i === 0 ? '现在' : `${String(t.getHours()).padStart(2, '0')}:00`;
+    return `
+      <div class="hour-item ${i === 0 ? 'now' : ''}">
+        <div class="h-time">${label}</div>
+        <div class="h-icon"><i class="qi-${iconToClass(h.icon)}"></i></div>
+        <div class="h-temp">${h.temp}°</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="section-label">逐小时</div>
+    <div class="hourly-card glass">
+      <div class="hourly-scroll">${items}</div>
+    </div>
+  `;
+}
+
+function buildDaily(daily) {
+  if (!daily || !daily.length) return '';
+
+  const lows  = daily.map(d => parseInt(d.tempMin, 10));
+  const highs = daily.map(d => parseInt(d.tempMax, 10));
+  const globalMin = Math.min(...lows);
+  const globalMax = Math.max(...highs);
+  const span = Math.max(globalMax - globalMin, 1);
+  const weekNames = ['周日','周一','周二','周三','周四','周五','周六'];
+
+  const rows = daily.map((d, i) => {
+    const lo = parseInt(d.tempMin, 10);
+    const hi = parseInt(d.tempMax, 10);
+    const leftPct  = ((lo - globalMin) / span) * 100;
+    const widthPct = Math.max(((hi - lo) / span) * 100, 6);
+    const date = new Date(d.fxDate + 'T00:00:00');
+    const label = i === 0 ? '今天' : weekNames[date.getDay()];
+    const pop = d.pop && d.pop !== '0' ? `${d.pop}%` : '';
+
+    return `
+      <div class="day-row">
+        <div class="day-name ${i === 0 ? 'today' : ''}">${label}</div>
+        <div class="day-icon"><i class="qi-${iconToClass(d.iconDay)}"></i></div>
+        <div class="day-rain">${pop}</div>
+        <div class="day-bar-wrap">
+          <span class="day-lo">${lo}°</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="left:${leftPct}%; width:${widthPct}%"></div>
+          </div>
+          <span class="day-hi">${hi}°</span>
         </div>
       </div>
-    </section>
+    `;
+  }).join('');
 
-    <section class="card">
-      <h2>IPv6 连通性</h2>
-      <div id="ipv6" class="value muted">检测中…</div>
-      <p class="detail">未检测到 IPv6 可能表示当前网络不支持 IPv6，也可能是测试服务暂时不可用。</p>
-    </section>
+  return `<div class="daily-card glass">${rows}</div>`;
+}
 
-    <section class="card">
-      <h2>WebRTC 检查</h2>
-      <div id="rtc" class="value muted">检测中…</div>
-      <ul id="rtc-list" class="candidate-list"></ul>
-      <p class="detail">浏览器可能隐藏本地地址。未显示候选地址不能单独证明不存在泄漏。</p>
-    </section>
+function buildMetrics(now, air) {
+  const cards = [];
 
-    <section class="card">
-      <h2>DNS 泄漏检查</h2>
-      <p class="detail">DNS 检查需要专门的检测服务。当前版本提供第三方检测入口。</p>
-      <a class="button" href="https://www.ipleak.net/" target="_blank" rel="noopener noreferrer">
-        前往 IPLeak.net
-      </a>
-    </section>
+  cards.push(metricCard('湿度', `${now.humidity}<small>%</small>`, `露点 ${now.dew || '—'}°`));
+  cards.push(metricCard('风速', `${now.windSpeed}<small>km/h</small>`, `${now.windDir || ''} ${now.windScale || '—'}级`));
+  cards.push(metricCard('气压', `${now.pressure}<small>hPa</small>`, '海平面气压'));
+  cards.push(metricCard('能见度', `${now.vis}<small>km</small>`, '水平能见度'));
 
-    <p class="footer">检测结果仅供网络排查参考</p>
-  </main>
+  if (air) {
+    const aqi = parseInt(air.aqi, 10) || 0;
+    const pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
+    cards.push(`
+      <div class="metric-card glass" style="grid-column: span 2">
+        <div class="m-label">空气质量 · ${air.category || '—'}</div>
+        <div class="m-value">${air.aqi}<small>AQI</small></div>
+        <div class="m-sub">首要污染物：${air.primary || '—'}</div>
+        <div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div>
+      </div>
+    `);
+  }
 
-  <script>
-    const el = (id) => document.getElementById(id);
+  return `<div class="metrics-grid">${cards.join('')}</div>`;
+}
 
-    function setValue(id, text, state = "") {
-      el(id).textContent = text;
-      el(id).className = `value ${state}`.trim();
-    }
+function metricCard(label, value, sub) {
+  return `
+    <div class="metric-card glass">
+      <div class="m-label">${label}</div>
+      <div class="m-value">${value}</div>
+      ${sub ? `<div class="m-sub">${sub}</div>` : ''}
+    </div>
+  `;
+}
 
-    async function checkPublicIP() {
-      el("alert").style.display = "none";
-      el("alert").textContent = "";
+function iconToClass(code) {
+  return String(code);
+}
 
-      ["ip", "location", "isp", "asn"].forEach((id) => {
-        setValue(id, "检测中…", "muted");
-      });
+/* ================================================================
+   初始化
+   ================================================================ */
+(function init() {
+  loadSettings();
 
-      try {
-        const response = await fetch("/api/check", {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store"
-        });
+  if (!state.apiKey) {
+    document.getElementById('mainContent').innerHTML =
+      '<div class="loading">点击右上角 ⚙ 填写和风天气凭据</div>';
+    openSettings();
+  } else {
+    geolookup('北京', true);
+  }
+})();
 
-        const data = await response.json().catch(() => null);
-
-        if (!response.ok || !data?.success) {
-          throw new Error(data?.error || `接口请求失败（HTTP ${response.status}）`);
-        }
-
-        setValue("ip", data.ip || "暂无数据");
-        setValue("location", data.location || "暂无位置数据");
-        setValue("isp", data.isp || "暂无 ISP 数据");
-        setValue("asn", data.asn行。下面是完整替换版。**404 的关键是部署位置**：`functions/api/check.js` 必须放在 Cloudflare Pages 项目根目录的 `functions/` 里，不能放进 `dist/`、`public/` 等静态输出目录。该文件会映射到 `/api/check`。cite1,2
-
-## 仓库目录
-
-```text
-仓库根目录/
-├── index.html
-└── functions/
-    └── api/
-        └── check.js
+document.getElementById('settingsOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSettings();
+});
+</script>
+</body>
+</html>
