@@ -83,7 +83,6 @@
   .timezone-note .tz-line-user { color: rgba(255,255,255,0.5); font-size: 10px; margin-top: 2px; }
   .timezone-note .tz-line-user strong { color: rgba(255,255,255,0.78); }
   .timezone-note .tz-diff { color: #ffd166; margin-left: 4px; }
-  .timezone-note .tz-warn { display: block; margin-top: 6px; color: #ffd166; font-size: 10px; line-height: 1.5; }
 
   .advice-line { margin: 14px auto 0; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); display: inline-block; max-width: 92%; }
 
@@ -187,7 +186,7 @@
   .diag-value.ok { color: #6bcf7f; }
   .diag-value.warn { color: #ffd166; }
   .diag-value.err { color: #ff6b6b; }
-  .diag-value small { font-size: 10px; color: var(--text-secondary); margin-left: 4px; font-weight: 400; display: block; }
+  .diag-value small { font-size: 10px; color: var(--text-secondary); margin-left: 4px; font-weight: 400; }
   .diag-conclusion { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
   .diag-conclusion.ok { background: rgba(107,207,127,0.1); border: 1px solid rgba(107,207,127,0.3); color: #6bcf7f; }
   .diag-conclusion.warn { background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.3); color: #ffd166; }
@@ -390,7 +389,7 @@ const KEY_SEC_TIP='qweather_security_tip_shown';
 const QWEATHER_MONTHLY_QUOTA = 50000;
 const WEATHERAPI_MONTHLY_QUOTA = 100000;
 
-const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:null, ipInfo:null };
+const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:null, ipInfo:null, clockDrift:null };
 let currentTab = 'home';
 let loadSeq = 0;
 let warningViewMode = 'local';
@@ -456,28 +455,23 @@ function getTimeDiffText(cityUtcOffset) {
   if (m > 0) s += (s ? ' ' : '') + m + ' 分钟';
   return sign + s;
 }
+
+/* ===== Hero 时间块：手机时间为主 ===== */
 function buildTimeBlock(d) {
   const cityNow = d.cityNow || '';
   const utcOffset = d.utcOffset || '';
   if (!cityNow) return '';
   if (isSameTimezone(utcOffset)) {
-    return `<div class="timezone-note"><span class="tz-line">🕐 当地时间 <strong>${cityNow}</strong>${utcOffset ? '（' + utcOffset + '）' : ''}</span></div>`;
+    return `<div class="timezone-note">
+      <span class="tz-line">🕐 当地时间 <strong>${cityNow}</strong>${utcOffset ? '（' + utcOffset + '）' : ''}</span>
+    </div>`;
   }
   const userTime = getUserLocalTimeDisplay();
   const userOffset = getUserUtcOffsetLabel();
   const diffText = getTimeDiffText(utcOffset);
-  let warnLine = '';
-  const ipInfo = state.ipInfo;
-  if (ipInfo && ipInfo.timezone) {
-    const browserTz = getBrowserTimeZone();
-    if (browserTz && browserTz !== ipInfo.timezone) {
-      warnLine = `<span class="tz-warn">⚠ 浏览器时区与 IP 归属地时区不一致，手机系统时区可能设置有误</span>`;
-    }
-  }
   return `<div class="timezone-note">
     <span class="tz-line">🕐 ${d.city.name} <strong>${cityNow}</strong>${utcOffset ? '（' + utcOffset + '）' : ''}</span>
     <span class="tz-line tz-line-user">📱 你的时间 <strong>${userTime}</strong>（${userOffset.label}）${diffText ? '<span class="tz-diff">· 相差 ' + diffText + '</span>' : ''}</span>
-    ${warnLine}
   </div>`;
 }
 function startClockRefresh() {
@@ -519,6 +513,23 @@ async function detectIpInfo() {
     }
   } catch {}
   return null;
+}
+
+/* ===== 手机时钟偏差检测（对比网络时间） ===== */
+async function checkClockDrift() {
+  try {
+    const t0 = Date.now();
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m', { cache: 'no-store' });
+    const t1 = Date.now();
+    try { await res.json(); } catch {}
+    const dateHeader = res.headers.get('date');
+    if (!dateHeader) return null;
+    const serverMs = new Date(dateHeader).getTime();
+    if (isNaN(serverMs)) return null;
+    const clientMs = (t0 + t1) / 2;
+    const driftMs = clientMs - serverMs;
+    return { driftMs, driftSec: Math.round(driftMs / 1000) };
+  } catch { return null; }
 }
 
 /* ===== API 统计 ===== */
@@ -628,7 +639,7 @@ function toggleKeyVisibility(inputId, btn) {
 function clearAllKeys() {
   if (!confirm('确定清除本机保存的所有数据？\n\n将清除：和风 Key、WeatherAPI Key、API Host、城市列表、API 调用统计。\n\n此操作不可撤销。')) return;
   [KEY_API,KEY_HOST,KEY_WA,KEY_CITIES,KEY_ACTIVE,KEY_API_STATS,KEY_SEC_TIP].forEach(k=>localStorage.removeItem(k));
-  state.apiKey=''; state.apiHost=''; state.waKey=''; state.cities=[]; state.activeIndex=0; state.data=null; state.ipInfo=null;
+  state.apiKey=''; state.apiHost=''; state.waKey=''; state.cities=[]; state.activeIndex=0; state.data=null; state.ipInfo=null; state.clockDrift=null;
   apiStats=emptyStats(); updateApiStatusBar();
   alert('已清除本机所有数据。页面将刷新回游客模式。');
   setTimeout(()=>location.reload(), 300);
@@ -1048,9 +1059,11 @@ async function loadWeather() {
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
+  // 并行：IP 检测 + 时钟偏差检测（都不阻塞天气主流程）
   const ipPromise = detectIpInfo().catch(() => null);
+  const driftPromise = checkClockDrift().catch(() => null);
 
-  if (!state.apiKey) { await loadGuestWeather(city, seq, ipPromise); return; }
+  if (!state.apiKey) { await loadGuestWeather(city, seq, ipPromise, driftPromise); return; }
 
   const localWarningsPromise = loadLocalWarnings(city);
   const nationwideWarningsPromise = loadNationwideWarnings();
@@ -1072,11 +1085,12 @@ async function loadWeather() {
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
 
-  const [r, localWarnings, nationwideWarnings, omTemp, waFull, mae, ipInfo] = await Promise.all([
-    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiFullPromise, maePromise, ipPromise
+  const [r, localWarnings, nationwideWarnings, omTemp, waFull, mae, ipInfo, clockDrift] = await Promise.all([
+    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiFullPromise, maePromise, ipPromise, driftPromise
   ]);
   if (seq !== loadSeq) return;
   if (ipInfo) state.ipInfo = ipInfo;
+  if (clockDrift) state.clockDrift = clockDrift;
 
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
   const dailyData = r[2].status==='fulfilled' ? r[2].value : null;
@@ -1115,12 +1129,13 @@ async function loadWeather() {
     weatherApiFull: waFull,
     cityNow, utcOffset, isGuest: false,
     ipInfo: ipInfo || null,
+    clockDrift: clockDrift || null,
     fetchedAt: Date.now(),
   };
   renderAll();
 }
 
-async function loadGuestWeather(city, seq, ipPromise) {
+async function loadGuestWeather(city, seq, ipPromise, driftPromise) {
   let guest = await fetchNmcGuest(city);
   if (!guest) guest = await fetchOpenMeteoGuest(city);
   if (seq !== loadSeq) return;
@@ -1130,9 +1145,10 @@ async function loadGuestWeather(city, seq, ipPromise) {
   }
   let localWarnings = [], nationwideWarnings = [];
   try { const [lw, nw] = await Promise.all([loadLocalWarnings(city), loadNationwideWarnings()]); localWarnings = lw; nationwideWarnings = nw; } catch {}
-  const ipInfo = await ipPromise;
+  const [ipInfo, clockDrift] = await Promise.all([ipPromise, driftPromise]);
   if (seq !== loadSeq) return;
   if (ipInfo) state.ipInfo = ipInfo;
+  if (clockDrift) state.clockDrift = clockDrift;
 
   const obsTime = guest.now.obsTime || '';
   const cityNow = parseCityTime(obsTime)?.timeDisplay || '';
@@ -1162,6 +1178,7 @@ async function loadGuestWeather(city, seq, ipPromise) {
     cityNow, utcOffset, isGuest: true,
     guestSource: guest.sourceLabel || '中央气象台',
     ipInfo: ipInfo || null,
+    clockDrift: clockDrift || null,
     fetchedAt: Date.now(),
   };
   renderAll();
@@ -1341,9 +1358,10 @@ function buildDetailPage(d) {
   `;
 }
 
-/* ===== 诊断卡片 ===== */
+/* ===== 诊断卡片（手机时间优先） ===== */
 function buildDiagnosticsCard(d) {
   const ip = d.ipInfo;
+  const drift = d.clockDrift;
   const browserTz = getBrowserTimeZone();
   const browserOffset = getUserUtcOffsetLabel();
   const cityOffset = d.utcOffset || '';
@@ -1351,164 +1369,68 @@ function buildDiagnosticsCard(d) {
   const obsCt = parseCityTime(obsTime);
   const obsDisplay = obsCt ? obsCt.timeDisplay : '—';
 
-  const ipRow = ip
-    ? `<div class="diag-row"><span class="diag-label">IP 地址</span><span class="diag-value">${ip.ip || '—'}</span></div>
-       <div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value">${[ip.country, ip.region, ip.city].filter(Boolean).join(' · ') || '—'}</span></div>
-       <div class="diag-row"><span class="diag-label">IP 时区</span><span class="diag-value">${ip.timezone || '—'}${ip.utcOffset ? '<small>' + ip.utcOffset + '</small>' : ''}</span></div>`
-    : `<div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value warn">检测失败（可能被网络或广告拦截器阻止）</span></div>`;
-
-  let conclusion = { level: 'info', text: '' };
-  if (ip && ip.timezone && browserTz) {
-    if (browserTz !== ip.timezone) {
-      conclusion = { level: 'warn', text: `你的浏览器时区（${browserTz}）与 IP 归属地时区（${ip.timezone}）不一致。这通常意味着手机系统时区设置有误，或正在使用 VPN / 代理。请优先信任 IP 归属地时区。` };
-    } else if (cityOffset && parseOffsetMinutes(cityOffset) !== null && parseOffsetMinutes(cityOffset) !== browserOffset.offsetMin) {
-      conclusion = { level: 'info', text: `你查看的城市（${d.city.name}）与你所在地区不在同一时区。页面已同时显示两个时间，这是正常现象。` };
-    } else {
-      conclusion = { level: 'ok', text: '浏览器时区、IP 归属地时区、目标城市时区三者一致，时间显示正常。' };
+  // 手机时钟偏差行
+  let driftRow = '';
+  if (drift) {
+    const sec = drift.driftSec;
+    const abs = Math.abs(sec);
+    const isAccurate = abs <= 30;
+    const isWarn = abs > 30 && abs <= 120;
+    const isErr = abs > 120;
+    const cls = isAccurate ? 'ok' : isWarn ? 'warn' : 'err';
+    let txt;
+    if (isAccurate) txt = '准确';
+    else if (sec > 0) txt = `快了 ${abs} 秒`;
+    else txt = `慢了 ${abs} 秒`;
+    if (abs > 60) {
+      const m = Math.round(abs / 60);
+      txt += `（约 ${m} 分钟）`;
     }
+    driftRow = `<div class="diag-row"><span class="diag-label">手机时钟偏差</span><span class="diag-value ${cls}">${txt}<small>对比网络时间</small></span></div>`;
   } else {
-    conclusion = { level: 'info', text: '无法获取完整 IP 归属地信息，仅展示浏览器时区。' };
+    driftRow = `<div class="diag-row"><span class="diag-label">手机时钟偏差</span><span class="diag-value">检测失败</span></div>`;
+  }
+
+  // IP 行
+  const ipRow = ip
+    ? `<div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value">${[ip.country, ip.region, ip.city].filter(Boolean).join(' · ') || '—'}</span></div>
+       <div class="diag-row"><span class="diag-label">IP 时区</span><span class="diag-value">${ip.timezone || '—'}${ip.utcOffset ? '<small>' + ip.utcOffset + '</small>' : ''}</span></div>`
+    : `<div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value">检测失败</span></div>`;
+
+  // 结论优先级：时钟偏差 > 特殊网络 > 同区/跨区
+  let conclusion;
+  const clockBad = drift && Math.abs(drift.driftSec) > 120;
+  const vpnDetected = ip && ip.timezone && browserTz && ip.timezone !== browserTz;
+  const sameTz = isSameTimezone(cityOffset);
+
+  if (clockBad) {
+    const dir = drift.driftSec > 0 ? '快了' : '慢了';
+    const m = Math.round(Math.abs(drift.driftSec) / 60);
+    conclusion = {
+      level: 'warn',
+      text: `⚠️ 你的手机时钟比网络时间${dir}约 ${m} 分钟。请打开系统设置 → 日期与时间 → 开启「自动设置时间」。页面所有时间显示都基于你手机的系统时钟，时钟不准会导致显示偏差。`
+    };
+  } else if (vpnDetected) {
+    conclusion = {
+      level: 'info',
+      text: `📡 检测到特殊网络环境：IP 归属地在「${ip.country || '未知'}」（时区 ${ip.timezone}），与你手机时区（${browserTz}）不一致。这通常是 VPN / 代理 / 海外节点造成的，属于正常情况。页面时间显示以你手机系统时区为准，IP 归属地仅作参考信息。`
+    };
+  } else if (sameTz) {
+    conclusion = {
+      level: 'ok',
+      text: `✅ 你的手机时区与目标城市（${d.city.name}）一致，时间显示正常。`
+    };
+  } else {
+    conclusion = {
+      level: 'info',
+      text: `🌍 你查看的城市（${d.city.name}）与你手机不在同一时区。页面已同时显示「城市当地时间」和「你的手机时间」，两者都对，不是数据错误。`
+    };
   }
 
   return `<div class="section-label">网络与时间诊断</div>
     <div class="diag-card glass">
       <div class="diag-head">
         <span class="diag-icon">🩺</span>
-        <span class="diag-title">三方时区一致性检查</span>
+        <span class="diag-title">手机时间优先 · IP 仅作参考</span>
       </div>
-      ${ipRow}
-      <div class="diag-row"><span class="diag-label">浏览器时区</span><span class="diag-value">${browserTz || '—'}<small>${browserOffset.label}</small></span></div>
-      <div class="diag-row"><span class="diag-label">目标城市时区</span><span class="diag-value">${cityOffset || '—'}</span></div>
-      <div class="diag-row"><span class="diag-label">观测时间</span><span class="diag-value">${obsDisplay}<small>${d.city?.name || ''}时间</small></span></div>
-      <div class="diag-conclusion ${conclusion.level}">${conclusion.text}</div>
-      <div class="diag-refresh">
-        <button onclick="refreshDiagnostics(this)">重新检测</button>
-      </div>
-    </div>`;
-}
-
-async function refreshDiagnostics(btn) {
-  if (btn) { btn.disabled = true; btn.textContent = '检测中…'; }
-  const ip = await detectIpInfo();
-  if (ip) state.ipInfo = ip;
-  if (state.data) {
-    state.data.ipInfo = ip;
-    document.getElementById('detailContent').innerHTML = buildDetailPage(state.data);
-  }
-  if (!ip) alert('IP 归属地检测失败。可能被网络环境或广告拦截器阻止，或当前网络无法访问 ipwho.is / ipapi.co。\n\n你可以尝试：\n1. 关闭广告拦截器或 VPN\n2. 更换网络后重试');
-}
-
-function buildGuestConfidenceCard(d) {
-  return `<div class="section-label">数据源</div>
-    <div class="conf-card glass">
-      <div class="conf-head"><span class="conf-icon">🌐</span><span class="conf-title" style="color:#7ec8e3">游客模式 · ${d.guestSource}</span></div>
-      <div class="conf-meta" style="text-align:left;line-height:1.8">
-        免费公开数据源，免注册、免 API Key、国内直连。<br>
-        实况更新频率约 10 分钟–1 小时，预报每日多次发布。<br>
-        暂不支持多源温度对比和历史准确度计算。
-      </div>
-    </div>`;
-}
-
-function buildConfidenceCard(d) {
-  const fused = d.consensus, mae = d.mae, vote = d.weatherVote, precip = d.precip, src = d.sources || {};
-  if (!fused && !mae) {
-    return `<div class="section-label">综合可信度</div><div class="conf-card glass"><div style="font-size:13px;color:var(--text-secondary);text-align:center;line-height:1.7;padding:16px 0">数据源不足，暂无法判断可信度。<br>配置 WeatherAPI Key 可获得更多源交叉验证。</div></div>`;
-  }
-  const level = fused ? fused.confidence : 'mid';
-  const icon = level === 'high' ? '✅' : level === 'mid' ? '🟡' : '⚠️';
-  const headline = level === 'high' ? '多源预报一致，可信度高' : level === 'mid' ? '多源预报基本一致，可信度中等' : '多源预报存在分歧，建议关注临近预报';
-  const color = level === 'high' ? '#6bcf7f' : level === 'mid' ? '#ffd166' : '#ff6b6b';
-  const srcList = [{name:'和风',temp:src.qweather},{name:'Open-Meteo',temp:src.openMeteo},{name:'WeatherAPI',temp:src.weatherApi}].filter(s=>s.temp!=null);
-  return `<div class="section-label">综合可信度</div>
-    <div class="conf-card glass">
-      <div class="conf-head"><span class="conf-icon">${icon}</span><span class="conf-title" style="color:${color}">${headline}</span></div>
-      <div class="conf-temps">${srcList.map(s=>`<div class="conf-temp-item"><div class="ct-val">${s.temp}°</div><div class="ct-name">${s.name}</div></div>`).join('')}</div>
-      <div class="conf-meta">${fused?`${fused.sourceCount} 个源 · 温度标准差 ${fused.spread}°`:''}${mae?` · 历史误差 ±${mae.mae}°C（${mae.days} 天）`:''}${vote&&vote.total>1?` · 天气现象 ${vote.agreement}/${vote.total} 一致`:''}</div>
-      ${precip&&precip.hasDisagreement?`<div class="conf-warn">⚠️ 降水概率分歧较大（${precip.maxRisk}% vs ${precip.average}%），建议同时关注临近预报</div>`:''}
-      <details class="conf-detail"><summary>查看各源原始数据</summary><div class="conf-raw">${srcList.map(s=>`<div class="conf-raw-row"><span>${s.name}</span><span>${s.temp}°</span></div>`).join('')}</div></details>
-    </div>`;
-}
-
-function buildMetrics(now, air) {
-  const cards = [];
-  cards.push(metricCard('湿度', `${now.humidity}<small>%</small>`, `露点温度 ${now.dew || '—'}°`));
-  cards.push(metricCard('风速', `${now.windSpeed}<small>公里/小时</small>`, `${now.windDir || ''} ${now.windScale || '—'}级`));
-  cards.push(metricCard('气压', `${now.pressure}<small>百帕</small>`, '海平面气压'));
-  cards.push(metricCard('能见度', `${now.vis}<small>公里</small>`, '水平能见度'));
-  if (air) {
-    const aqi = parseInt(air.aqi, 10) || 0, pct = Math.min(Math.max(aqi / 300, 0), 1) * 100;
-    const AIR_CN = aqi <= 50 ? '优' : aqi <= 100 ? '良' : aqi <= 150 ? '轻度污染' : aqi <= 200 ? '中度污染' : aqi <= 300 ? '重度污染' : '严重污染';
-    const POLL = { pm2p5:'PM2.5', pm10:'PM10', o3:'臭氧', no2:'二氧化氮', so2:'二氧化硫', co:'一氧化碳' };
-    cards.push(`<div class="metric-card glass" style="grid-column:span 2"><div class="m-label">空气质量 · ${AIR_CN}</div><div class="m-value">${air.aqi}<small>AQI</small></div><div class="m-sub">首要污染物：${POLL[air.primary] || air.primary || '—'}</div><div class="aqi-bar"><div class="aqi-dot" style="left:${pct}%"></div></div></div>`);
-  }
-  return `<div class="metrics-grid">${cards.join('')}</div>`;
-}
-function fmtTime(iso) { if (!iso) return '—'; const m = String(iso).match(/T(\d{2}:\d{2})/); return m ? m[1] : String(iso).slice(0, 5); }
-function buildAstro(sun, moon) {
-  if (!sun && !moon) return '';
-  const items = [];
-  if (sun) { items.push(`<div class="astro-item"><div class="a-label">日出</div><div class="a-value">${fmtTime(sun.sunrise)}</div></div>`); items.push(`<div class="astro-item"><div class="a-label">日落</div><div class="a-value">${fmtTime(sun.sunset)}</div></div>`); }
-  if (moon) { items.push(`<div class="astro-item"><div class="a-label">月相</div><div class="a-value">${moon.name || '—'}</div><div class="a-sub">照明 ${moon.illumination || '—'}%</div></div>`); items.push(`<div class="astro-item"><div class="a-label">月升 / 月落</div><div class="a-value">${fmtTime(moon.moonrise)} / ${fmtTime(moon.moonset)}</div></div>`); }
-  return `<div class="section-label">天文</div><div class="astro-card glass">${items.join('')}</div>`;
-}
-function metricCard(label, value, sub) { return `<div class="metric-card glass"><div class="m-label">${label}</div><div class="m-value">${value}</div>${sub ? `<div class="m-sub">${sub}</div>` : ''}</div>`; }
-function buildWeatherApiSummary(wa) {
-  if (!wa) return '';
-  const aqi = wa.current?.air_quality || {};
-  const usEpa = aqi['us-epa-index'];
-  const text = usEpa == null ? '空气质量数据暂缺' : usEpa <= 50 ? '🌿 空气质量优，适合户外活动' : usEpa <= 100 ? '🍃 空气质量良，敏感人群注意' : usEpa <= 150 ? '😷 轻度污染，敏感人群减少户外' : '⚠️ 空气质量较差，建议减少户外活动';
-  return `<div class="section-label" style="margin-top:18px">补充参考 · WeatherAPI</div>
-    <div class="wa-mini glass">
-      <div class="wa-mini-text">${text}</div>
-      <details class="wa-mini-detail">
-        <summary>查看 WeatherAPI 详细数据（六项污染物）</summary>
-        <div class="wa-mini-grid">
-          <div>PM2.5：${aqi.pm2_5?.toFixed(1) ?? '—'} μg/m³</div>
-          <div>PM10：${aqi.pm10?.toFixed(1) ?? '—'} μg/m³</div>
-          <div>O₃：${aqi.o3?.toFixed(1) ?? '—'} μg/m³</div>
-          <div>NO₂：${aqi.no2?.toFixed(1) ?? '—'} μg/m³</div>
-          <div>SO₂：${aqi.so2?.toFixed(1) ?? '—'} μg/m³</div>
-          <div>CO：${aqi.co?.toFixed(1) ?? '—'} μg/m³</div>
-        </div>
-        <div class="wa-mini-note">数据来自 WeatherAPI 免费计划（3 天预报 + 空气质量），作为和风天气主数据源的交叉验证参考。</div>
-      </details>
-    </div>`;
-}
-
-/* ===== 手势 & 初始化 ===== */
-const viewsEl = document.getElementById('views');
-let swipeStartX = 0, swipeStartY = 0, swiping = false;
-viewsEl.addEventListener('touchstart', e => {
-  if (e.target.closest('.hourly-scroll, .indices-grid, .rain-chart, .cs-list')) return;
-  const t = e.touches[0]; swipeStartX = t.clientX; swipeStartY = t.clientY; swiping = true;
-}, { passive: true });
-viewsEl.addEventListener('touchend', e => {
-  if (!swiping) return; swiping = false;
-  const t = e.changedTouches[0];
-  const dx = t.clientX - swipeStartX, dy = t.clientY - swipeStartY;
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-    const idx = TABS.indexOf(currentTab);
-    if (dx < 0 && idx < TABS.length - 1) switchTab(TABS[idx + 1]);
-    if (dx > 0 && idx > 0) switchTab(TABS[idx - 1]);
-  }
-}, { passive: true });
-
-(function init() {
-  checkUrlLeakage();
-  loadSettings();
-  updateApiStatusBar();
-  const hash = location.hash.slice(1);
-  if (TABS.includes(hash)) switchTab(hash, false);
-  if (!state.apiKey) {
-    if (state.cities.length) { loadWeather(); }
-    else { initLocation(); }
-  } else {
-    initLocation();
-    maybeShowSecurityTip();
-  }
-})();
-document.getElementById('settingsOverlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeSettings(); });
-</script>
-</body>
-</html>
+      <div class="diag-row"><span class="diag-label">你的手机时间</span><span class
