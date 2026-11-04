@@ -83,6 +83,7 @@
   .timezone-note .tz-line-user { color: rgba(255,255,255,0.5); font-size: 10px; margin-top: 2px; }
   .timezone-note .tz-line-user strong { color: rgba(255,255,255,0.78); }
   .timezone-note .tz-diff { color: #ffd166; margin-left: 4px; }
+  .timezone-note .tz-warn { display: block; margin-top: 6px; color: #ffd166; font-size: 10px; line-height: 1.5; }
 
   .advice-line { margin: 14px auto 0; padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); display: inline-block; max-width: 92%; }
 
@@ -174,6 +175,27 @@
   .wa-mini-detail summary { font-size: 11px; color: var(--text-secondary); cursor: pointer; user-select: none; outline: none; }
   .wa-mini-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; font-size: 11px; color: var(--text-secondary); }
   .wa-mini-note { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10px; color: var(--text-secondary); line-height: 1.5; }
+
+  .diag-card { padding: 18px 16px; margin-bottom: 18px; }
+  .diag-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .diag-icon { font-size: 22px; flex-shrink: 0; }
+  .diag-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .diag-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 9px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); gap: 12px; }
+  .diag-row:last-of-type { border-bottom: none; }
+  .diag-label { color: var(--text-secondary); flex-shrink: 0; }
+  .diag-value { color: #fff; font-weight: 500; text-align: right; word-break: break-all; font-variant-numeric: tabular-nums; }
+  .diag-value.ok { color: #6bcf7f; }
+  .diag-value.warn { color: #ffd166; }
+  .diag-value.err { color: #ff6b6b; }
+  .diag-value small { font-size: 10px; color: var(--text-secondary); margin-left: 4px; font-weight: 400; display: block; }
+  .diag-conclusion { margin-top: 14px; padding: 12px; border-radius: 10px; font-size: 12px; line-height: 1.6; }
+  .diag-conclusion.ok { background: rgba(107,207,127,0.1); border: 1px solid rgba(107,207,127,0.3); color: #6bcf7f; }
+  .diag-conclusion.warn { background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.3); color: #ffd166; }
+  .diag-conclusion.info { background: rgba(126,200,227,0.1); border: 1px solid rgba(126,200,227,0.3); color: #7ec8e3; }
+  .diag-refresh { margin-top: 12px; text-align: center; }
+  .diag-refresh button { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; padding: 9px 20px; border-radius: 10px; font-size: 12px; cursor: pointer; font-family: var(--font-stack); }
+  .diag-refresh button:active { background: rgba(255,255,255,0.15); }
+  .diag-refresh button:disabled { opacity: 0.5; cursor: default; }
 
   .api-status-bar { position: fixed; bottom: calc(var(--tabbar-h) + var(--safe-bottom)); left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--api-bar-h); background: rgba(16, 22, 34, 0.94); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; padding: 0 12px; gap: 6px; font-size: 10px; color: var(--text-secondary); z-index: 49; cursor: pointer; user-select: none; overflow: hidden; }
   .api-status-bar:active { background: rgba(24, 32, 46, 0.96); }
@@ -332,7 +354,7 @@
     <p class="hint">
       前往 console.qweather.com 创建项目获取凭据。<br>
       <strong>不填 Key 也可以使用</strong>，游客模式自动使用中央气象台/Open-Meteo 免费数据。<br>
-      <span style="color:#ffd166">🔒 安全提示：</span>填入 Key 后，请到和风控制台为凭据设置 <strong>API 限制</strong>（只勾选实际用到的接口）和 <strong>网址限制</strong>（填你的部署域名），这样即使 Key 被看到，也无法被别人在其他网站滥用。
+      <span style="color:#ffd166">🔒 安全提示：</span>填入 Key 后，请到和风控制台为凭据设置 <strong>API 限制</strong> 和 <strong>网址限制</strong>。
     </p>
 
     <label>和风天气 API Key</label>
@@ -368,7 +390,7 @@ const KEY_SEC_TIP='qweather_security_tip_shown';
 const QWEATHER_MONTHLY_QUOTA = 50000;
 const WEATHERAPI_MONTHLY_QUOTA = 100000;
 
-const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:null };
+const state = { apiKey:'', apiHost:'', waKey:'', cities:[], activeIndex:0, data:null, ipInfo:null };
 let currentTab = 'home';
 let loadSeq = 0;
 let warningViewMode = 'local';
@@ -381,9 +403,7 @@ function nowStr() {
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
 }
 
-/* ================================================================
-   时间校正工具
-   ================================================================ */
+/* ===== 时间工具 ===== */
 function parseCityTime(fxTime) {
   const m = String(fxTime || '').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (!m) return null;
@@ -404,19 +424,19 @@ function getUserUtcOffsetLabel() {
   const offsetMin = -new Date().getTimezoneOffset();
   const sign = offsetMin >= 0 ? '+' : '-';
   const abs = Math.abs(offsetMin);
-  const hh = String(Math.floor(abs / 60)).padStart(2, '0');
-  const mm = String(abs % 60).padStart(2, '0');
-  return { offsetMin, label: `UTC${sign}${hh}:${mm}` };
+  return { offsetMin, label: `UTC${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}` };
 }
-function parseOffsetMinutes(utcOffsetStr) {
-  const m = String(utcOffsetStr || '').match(/UTC([+-])(\d{2}):(\d{2})/);
+function parseOffsetMinutes(str) {
+  const m = String(str || '').match(/UTC([+-])(\d{2}):(\d{2})/);
   if (!m) return null;
-  const sign = m[1] === '+' ? 1 : -1;
-  return sign * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10));
+  return (m[1] === '+' ? 1 : -1) * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10));
 }
 function getUserLocalTimeDisplay() {
   const d = new Date();
   return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function getBrowserTimeZone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; }
 }
 function isSameTimezone(cityUtcOffset) {
   const cityMin = parseOffsetMinutes(cityUtcOffset);
@@ -430,8 +450,7 @@ function getTimeDiffText(cityUtcOffset) {
   if (diffMin === 0) return '';
   const sign = diffMin > 0 ? '+' : '-';
   const abs = Math.abs(diffMin);
-  const h = Math.floor(abs / 60);
-  const m = abs % 60;
+  const h = Math.floor(abs / 60), m = abs % 60;
   let s = '';
   if (h > 0) s += h + ' 小时';
   if (m > 0) s += (s ? ' ' : '') + m + ' 分钟';
@@ -447,9 +466,18 @@ function buildTimeBlock(d) {
   const userTime = getUserLocalTimeDisplay();
   const userOffset = getUserUtcOffsetLabel();
   const diffText = getTimeDiffText(utcOffset);
+  let warnLine = '';
+  const ipInfo = state.ipInfo;
+  if (ipInfo && ipInfo.timezone) {
+    const browserTz = getBrowserTimeZone();
+    if (browserTz && browserTz !== ipInfo.timezone) {
+      warnLine = `<span class="tz-warn">⚠ 浏览器时区与 IP 归属地时区不一致，手机系统时区可能设置有误</span>`;
+    }
+  }
   return `<div class="timezone-note">
     <span class="tz-line">🕐 ${d.city.name} <strong>${cityNow}</strong>${utcOffset ? '（' + utcOffset + '）' : ''}</span>
     <span class="tz-line tz-line-user">📱 你的时间 <strong>${userTime}</strong>（${userOffset.label}）${diffText ? '<span class="tz-diff">· 相差 ' + diffText + '</span>' : ''}</span>
+    ${warnLine}
   </div>`;
 }
 function startClockRefresh() {
@@ -470,9 +498,30 @@ document.addEventListener('visibilitychange', () => {
   else if (state.data) startClockRefresh();
 });
 
-/* ================================================================
-   API 统计
-   ================================================================ */
+/* ===== IP 归属地检测 ===== */
+async function detectIpInfo() {
+  try {
+    const res = await fetch('https://ipwho.is/?fields=ip,country,city,region,timezone');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success !== false) {
+        return { ip: data.ip||'', country: data.country||'', city: data.city||'', region: data.region||'', timezone: data.timezone?.id||'', utcOffset: data.timezone?.utc||'', source: 'ipwho.is' };
+      }
+    }
+  } catch {}
+  try {
+    const res = await fetch('https://ipapi.co/json/');
+    if (res.ok) {
+      const data = await res.json();
+      if (!data.error) {
+        return { ip: data.ip||'', country: data.country_name||'', city: data.city||'', region: data.region||'', timezone: data.timezone||'', utcOffset: data.utc_offset||'', source: 'ipapi.co' };
+      }
+    }
+  } catch {}
+  return null;
+}
+
+/* ===== API 统计 ===== */
 function getMonthKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
 function emptyStats() { return { month: getMonthKey(), sources: { qweather:{ok:0,fail:0}, openmeteo:{ok:0,fail:0}, weatherapi:{ok:0,fail:0}, nmc:{ok:0,fail:0} } }; }
 function loadApiStats() { try { const raw = localStorage.getItem(KEY_API_STATS); if (raw) { const s = JSON.parse(raw); if (s && s.month === getMonthKey() && s.sources) return s; } } catch {} return emptyStats(); }
@@ -490,24 +539,22 @@ async function trackedFetch(url, source) {
   try { const r = await fetch(url); trackApi(source, r.ok); return r; }
   catch (e) { trackApi(source, false); throw e; }
 }
-async function fetchJson(url, source = 'qweather') {
+async function fetchJson(url, source='qweather') {
   const r = await trackedFetch(url, source);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.json();
 }
 
-/* ================================================================
-   WeatherAPI 测试
-   ================================================================ */
+/* ===== WeatherAPI 测试 ===== */
 async function testWeatherAPI(key) {
-  if (!key) return { ok: false, error: '未配置 Key' };
+  if (!key) return { ok:false, error:'未配置 Key' };
   try {
     const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${encodeURIComponent(key)}&q=London`);
-    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    if (!res.ok) return { ok:false, error:`HTTP ${res.status}` };
     const data = await res.json();
-    if (data.error) return { ok: false, error: data.error.message || '未知错误' };
-    return { ok: true, temp: data.current?.temp_c, city: data.location?.name };
-  } catch (e) { return { ok: false, error: e.message }; }
+    if (data.error) return { ok:false, error: data.error.message||'未知错误' };
+    return { ok:true, temp: data.current?.temp_c, city: data.location?.name };
+  } catch (e) { return { ok:false, error: e.message }; }
 }
 async function testWeatherApiFromPanel() {
   const key = state.waKey;
@@ -520,28 +567,23 @@ async function testWeatherApiFromPanel() {
   else alert(`❌ WeatherAPI 测试失败\n原因：${r.error}`);
 }
 
-/* ================================================================
-   状态条 UI
-   ================================================================ */
+/* ===== 状态条 ===== */
 function computeTotals(sources) { let ok=0, fail=0; Object.values(sources).forEach(s=>{ok+=s.ok;fail+=s.fail;}); return {ok,fail,total:ok+fail}; }
 function getHealthClass(ok, fail) { const total=ok+fail; if(!total)return ''; if(fail/total>0.05)return 'err'; if(fail>0)return 'warn'; return ''; }
 function updateApiStatusBar() {
-  const qw = apiStats.sources.qweather||{ok:0,fail:0}, wa = apiStats.sources.weatherapi||{ok:0,fail:0};
-  const om = apiStats.sources.openmeteo||{ok:0,fail:0}, nmc = apiStats.sources.nmc||{ok:0,fail:0};
+  const qw=apiStats.sources.qweather||{ok:0,fail:0}, wa=apiStats.sources.weatherapi||{ok:0,fail:0};
+  const om=apiStats.sources.openmeteo||{ok:0,fail:0}, nmc=apiStats.sources.nmc||{ok:0,fail:0};
   const qwUsed=qw.ok+qw.fail, waUsed=wa.ok+wa.fail, omUsed=om.ok+om.fail, nmcUsed=nmc.ok+nmc.fail;
-  const pct = Math.min(100, (qwUsed / QWEATHER_MONTHLY_QUOTA) * 100);
+  const pct = Math.min(100, (qwUsed/QWEATHER_MONTHLY_QUOTA)*100);
   const totals = computeTotals(apiStats.sources);
   let health = getHealthClass(totals.ok, totals.fail);
-  if (state.waKey && waUsed===0 && qwUsed>0) health = 'warn';
-
+  if (state.waKey && waUsed===0 && qwUsed>0) health='warn';
   document.getElementById('asDot').className = 'as-dot' + (health?' '+health:'');
   const parts = [];
-  if (state.apiKey) parts.push(`和风 ${qwUsed}`);
-  else parts.push('游客模式');
+  if (state.apiKey) parts.push(`和风 ${qwUsed}`); else parts.push('游客模式');
   if (state.waKey || waUsed>0) parts.push(waUsed>0?`WA ${waUsed}`:'WA 未生效');
   if (omUsed+nmcUsed>0) parts.push(`其他 ${omUsed+nmcUsed}`);
   document.getElementById('asText').textContent = parts.join(' · ');
-
   const fill = document.getElementById('asProgressFill');
   fill.style.width = pct.toFixed(1)+'%';
   fill.className = 'as-progress-fill' + (pct>=80?' err':pct>=50?' warn':'');
@@ -575,39 +617,26 @@ function renderApiDetail() {
 }
 function resetApiStats() { if(!confirm('确定重置本月 API 调用统计？'))return; apiStats=emptyStats(); saveApiStats(apiStats); updateApiStatusBar(); renderApiDetail(); }
 
-/* ================================================================
-   安全相关
-   ================================================================ */
+/* ===== 安全 ===== */
 function toggleKeyVisibility(inputId, btn) {
-  const el = document.getElementById(inputId);
-  if (!el) return;
+  const el = document.getElementById(inputId); if (!el) return;
   const isPassword = el.type === 'password';
   el.type = isPassword ? 'text' : 'password';
   btn.textContent = isPassword ? '🙈' : '👁';
-  if (isPassword) {
-    clearTimeout(btn._hideTimer);
-    btn._hideTimer = setTimeout(() => { el.type = 'password'; btn.textContent = '👁'; }, 15000);
-  }
+  if (isPassword) { clearTimeout(btn._hideTimer); btn._hideTimer = setTimeout(()=>{ el.type='password'; btn.textContent='👁'; }, 15000); }
 }
 function clearAllKeys() {
   if (!confirm('确定清除本机保存的所有数据？\n\n将清除：和风 Key、WeatherAPI Key、API Host、城市列表、API 调用统计。\n\n此操作不可撤销。')) return;
-  localStorage.removeItem(KEY_API);
-  localStorage.removeItem(KEY_HOST);
-  localStorage.removeItem(KEY_WA);
-  localStorage.removeItem(KEY_CITIES);
-  localStorage.removeItem(KEY_ACTIVE);
-  localStorage.removeItem(KEY_API_STATS);
-  localStorage.removeItem(KEY_SEC_TIP);
-  state.apiKey = ''; state.apiHost = ''; state.waKey = '';
-  state.cities = []; state.activeIndex = 0; state.data = null;
-  apiStats = emptyStats(); updateApiStatusBar();
+  [KEY_API,KEY_HOST,KEY_WA,KEY_CITIES,KEY_ACTIVE,KEY_API_STATS,KEY_SEC_TIP].forEach(k=>localStorage.removeItem(k));
+  state.apiKey=''; state.apiHost=''; state.waKey=''; state.cities=[]; state.activeIndex=0; state.data=null; state.ipInfo=null;
+  apiStats=emptyStats(); updateApiStatusBar();
   alert('已清除本机所有数据。页面将刷新回游客模式。');
-  setTimeout(() => location.reload(), 300);
+  setTimeout(()=>location.reload(), 300);
 }
 function checkUrlLeakage() {
   const url = location.href;
   if (/[?&](key|apikey|api_key|token)=/i.test(url)) {
-    if (confirm('检测到页面 URL 中包含疑似密钥的参数。\n\n这可能是由于你不小心分享了带密钥的链接。\n\n是否立即从地址栏移除并重新加载？')) {
+    if (confirm('检测到页面 URL 中包含疑似密钥的参数。\n\n是否立即从地址栏移除并重新加载？')) {
       const cleanUrl = url.replace(/([?&])(key|apikey|api_key|token)=[^&]*&?/gi, '$1').replace(/[?&]$/, '');
       location.replace(cleanUrl);
     }
@@ -616,38 +645,33 @@ function checkUrlLeakage() {
 function maybeShowSecurityTip() {
   if (securityTipShown) return;
   if (localStorage.getItem(KEY_SEC_TIP) === '1') return;
-  securityTipShown = true;
-  localStorage.setItem(KEY_SEC_TIP, '1');
-  setTimeout(() => {
-    alert('🔒 安全提示\n\n你的 Key 保存在浏览器本地，不会进入公开仓库，但任何能打开你网页的人都能通过开发者工具看到它。\n\n强烈建议现在就到和风天气控制台：\n1. 为凭据启用「API 限制」，只勾选实际用到的接口\n2. 启用「网址限制」，填入你的部署域名\n\n这样即使 Key 被看到，也无法在其他网站滥用。');
-  }, 800);
+  securityTipShown = true; localStorage.setItem(KEY_SEC_TIP, '1');
+  setTimeout(()=>alert('🔒 安全提示\n\n你的 Key 保存在浏览器本地，不会进入公开仓库，但任何能打开你网页的人都能通过开发者工具看到它。\n\n强烈建议到和风天气控制台：\n1. 启用「API 限制」，只勾选实际用到的接口\n2. 启用「网址限制」，填入你的部署域名'), 800);
 }
 
-/* ================================================================
-   天气图标
-   ================================================================ */
+/* ===== 天气图标 ===== */
 function weatherEmoji(code) {
-  const c = String(code || ''), n = parseInt(c, 10);
+  const c = String(code||''), n = parseInt(c, 10);
   if (['150','151','152','153'].includes(c)) return '🌙';
-  if (c === '100') return '☀️';
+  if (c==='100') return '☀️';
   if (['101','102','103'].includes(c)) return '⛅';
-  if (c === '104') return '☁️';
+  if (c==='104') return '☁️';
   if (['300','305'].includes(c)) return '🌦️';
   if (['302','303','304'].includes(c)) return '⛈️';
   if (['306','307','308','309','310','311','312','313','314','315','316','317','318','399'].includes(c)) return '🌧️';
-  if (n >= 400 && n < 500) return '❄️';
+  if (n>=400&&n<500) return '❄️';
   if (['503','504','507','508'].includes(c)) return '🌪️';
-  if (n >= 500 && n < 600) return '🌫️';
-  if (n >= 300 && n < 400) return '🌧️';
-  if (n >= 100 && n < 200) return '☁️';
+  if (n>=500&&n<600) return '🌫️';
+  if (n>=300&&n<400) return '🌧️';
+  if (n>=100&&n<200) return '☁️';
   return '🌡️';
 }
 function weatherEmojiFromText(text) {
-  const t = String(text || '');
+  const t = String(text||'');
   if (t.includes('雨')) return '🌧️';
   if (t.includes('雪')) return '❄️';
   if (t.includes('雷')) return '⛈️';
-  if (t.includes('雾') || t.includes('霾')) return '🌫️';
+  if (t.includes('雾')||t.includes('霾')) return '🌫️';
   if (t.includes('云')) return '⛅';
   if (t.includes('阴')) return '☁️';
   if (t.includes('晴')) return '☀️';
@@ -655,9 +679,7 @@ function weatherEmojiFromText(text) {
 }
 function iconHtml(code) { return `<span class="weather-emoji">${weatherEmoji(code)}</span>`; }
 
-/* ================================================================
-   多源融合
-   ================================================================ */
+/* ===== 多源融合 ===== */
 function fuseTemperature(sources, mae) {
   let wQw=0.6, wOm=0.2, wWa=0.2;
   if(mae){ if(mae.mae<1.5){wQw=0.5;wOm=0.3;wWa=0.2;} else if(mae.mae>3){wQw=0.7;wOm=0.1;wWa=0.2;} }
@@ -672,19 +694,19 @@ function fuseTemperature(sources, mae) {
   const mean=values.reduce((a,b)=>a+b,0)/values.length;
   const variance=values.reduce((s,t)=>s+(t-mean)**2,0)/values.length;
   const spread=Math.sqrt(variance);
-  return {temp:Math.round(fusedTemp*10)/10,spread:parseFloat(spread.toFixed(1)),confidence:spread<1?'high':spread<2?'mid':'low',sourceCount:items.length};
+  return {temp:Math.round(fusedTemp*10)/10, spread:parseFloat(spread.toFixed(1)), confidence:spread<1?'high':spread<2?'mid':'low', sourceCount:items.length};
 }
 function voteWeather(qwIcon, waText) {
   const cat=(code)=>{const c=String(code||'');if(c==='100'||c==='150')return'晴';if(c.startsWith('10'))return'多云';if(c.startsWith('3'))return'雨';if(c.startsWith('4'))return'雪';if(c.startsWith('5'))return'雾霾';if(waText)return waText.includes('雨')?'雨':waText.includes('雪')?'雪':waText.includes('云')?'多云':'其他';return'其他';};
   const votes=[cat(qwIcon)]; if(waText)votes.push(cat(null,waText));
   const counts={}; votes.forEach(v=>counts[v]=(counts[v]||0)+1);
   const top=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
-  return {category:top?.[0]||'未知',agreement:top?.[1]||0,total:votes.length};
+  return {category:top?.[0]||'未知', agreement:top?.[1]||0, total:votes.length};
 }
 function fusePrecipitation(pops) {
   const valid=pops.filter(p=>typeof p==='number'&&!isNaN(p)); if(!valid.length)return null;
   const avg=valid.reduce((a,b)=>a+b,0)/valid.length; const max=Math.max(...valid),min=Math.min(...valid);
-  return {average:Math.round(avg),maxRisk:max,hasDisagreement:(max-min)>30,spread:max-min};
+  return {average:Math.round(avg), maxRisk:max, hasDisagreement:(max-min)>30, spread:max-min};
 }
 function buildAdvice(fused, weatherVote, precip, now, daily, air) {
   const temp=fused?fused.temp:parseFloat(now.temp);
@@ -705,9 +727,7 @@ function buildAdvice(fused, weatherVote, precip, now, daily, air) {
   return tips.slice(0,2).join(' · ')||'🌤 天气平稳，适合日常出行';
 }
 
-/* ================================================================
-   设置 / 城市
-   ================================================================ */
+/* ===== 设置 / 城市 ===== */
 function loadSettings() {
   state.apiKey=localStorage.getItem(KEY_API)||'';
   state.apiHost=localStorage.getItem(KEY_HOST)||'';
@@ -850,9 +870,7 @@ async function fallbackBeijing(){
   }catch(e){document.getElementById('homeContent').innerHTML=`<div class="loading">加载失败：${e.message}</div>`;}
 }
 
-/* ================================================================
-   预警
-   ================================================================ */
+/* ===== 预警 ===== */
 function formatWarningItem(a){
   const title=a.title||'气象预警';const issuetime=a.issuetime||'';
   const detailUrl=a.alertid?`https://www.nmc.cn/publish/alarm/${a.alertid}.html`:(a.url?`https://www.nmc.cn${a.url}`:'');
@@ -879,9 +897,7 @@ async function loadNationwideWarnings(){
   }catch{return[];}
 }
 
-/* ================================================================
-   数据获取
-   ================================================================ */
+/* ===== 数据获取 ===== */
 async function fetchOpenMeteo(city){
   if(!city.lon||!city.lat)return null;
   try{
@@ -940,9 +956,7 @@ async function ensureCityCoords(city){
   return city;
 }
 
-/* ================================================================
-   游客模式数据源
-   ================================================================ */
+/* ===== 游客模式 ===== */
 async function fetchNmcGuest(city){
   if(!city.lon||!city.lat)return null;
   try{
@@ -974,10 +988,8 @@ async function fetchNmcGuest(city){
       source:'nmc',
       now:{temp:real.temperature,text:real.info,feelsLike:real.feelst,humidity:real.humidity,windDir:real.windDirect,windScale:real.windScale,windSpeed:real.windSpeed,pressure:real.pressure,vis:real.visible,icon:null,obsTime:real.publish_time},
       daily:forecast.map(d=>({fxDate:d.date,tempMax:d.maxTemp,tempMin:d.minTemp,textDay:d.day?.weather||'',iconDay:null,pop:null,precip:d.day?.rainfall,uvIndex:null})),
-      hourly:[],
-      air:detail?.air?{aqi:detail.air.aqi,category:detail.air.category,primary:detail.air.primary}:null,
-      minutely:null,sun:null,moon:null,
-      sourceLabel:'中央气象台',
+      hourly:[], air:detail?.air?{aqi:detail.air.aqi,category:detail.air.category,primary:detail.air.primary}:null,
+      minutely:null,sun:null,moon:null, sourceLabel:'中央气象台',
     };
   }catch(e){return null;}
 }
@@ -1028,9 +1040,7 @@ async function fetchOpenMeteoGuest(city){
   }catch(e){return null;}
 }
 
-/* ================================================================
-   天气加载
-   ================================================================ */
+/* ===== 天气加载 ===== */
 async function loadWeather() {
   let city = getActiveCity();
   if (!city) { document.getElementById('homeContent').innerHTML = '<div class="loading">请先添加城市</div>'; return; }
@@ -1038,7 +1048,9 @@ async function loadWeather() {
   const seq = ++loadSeq;
   document.getElementById('homeContent').innerHTML = '<div class="loading"><div class="spinner"></div>加载中…</div>';
 
-  if (!state.apiKey) { await loadGuestWeather(city, seq); return; }
+  const ipPromise = detectIpInfo().catch(() => null);
+
+  if (!state.apiKey) { await loadGuestWeather(city, seq, ipPromise); return; }
 
   const localWarningsPromise = loadLocalWarnings(city);
   const nationwideWarningsPromise = loadNationwideWarnings();
@@ -1060,10 +1072,11 @@ async function loadWeather() {
   tasks.push(fetchJson(`${api}/v7/astronomy/sun?location=${loc}&key=${key}`));
   tasks.push(fetchJson(`${api}/v7/astronomy/moon?location=${loc}&key=${key}`));
 
-  const [r, localWarnings, nationwideWarnings, omTemp, waFull, mae] = await Promise.all([
-    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiFullPromise, maePromise
+  const [r, localWarnings, nationwideWarnings, omTemp, waFull, mae, ipInfo] = await Promise.all([
+    Promise.allSettled(tasks), localWarningsPromise, nationwideWarningsPromise, openMeteoPromise, weatherApiFullPromise, maePromise, ipPromise
   ]);
   if (seq !== loadSeq) return;
+  if (ipInfo) state.ipInfo = ipInfo;
 
   const nowData = r[0].status==='fulfilled' ? r[0].value : null;
   const dailyData = r[2].status==='fulfilled' ? r[2].value : null;
@@ -1078,14 +1091,12 @@ async function loadWeather() {
   const qwTemp = parseFloat(nowData.now.temp);
   const waTemp = waFull?.current?.temp_c != null ? parseFloat(waFull.current.temp_c) : null;
   const sources = { qweather: qwTemp, openMeteo: omTemp, weatherApi: waTemp };
-
   const fused = fuseTemperature(sources, mae);
   const weatherVote = voteWeather(nowData.now.icon, waFull?.current?.condition?.text);
   const precip = fusePrecipitation([
     parseInt(dailyData.daily[0]?.pop || 0, 10),
     waFull?.forecast?.forecastday?.[0]?.day?.daily_chance_of_rain ?? null,
   ]);
-
   const obsTime = nowData.now.obsTime || '';
   const cityNow = parseCityTime(obsTime)?.timeDisplay || '';
   const utcOffset = getCityUtcOffset(obsTime) || '';
@@ -1103,26 +1114,25 @@ async function loadWeather() {
     sources, consensus: fused, mae, weatherVote, precip,
     weatherApiFull: waFull,
     cityNow, utcOffset, isGuest: false,
+    ipInfo: ipInfo || null,
+    fetchedAt: Date.now(),
   };
   renderAll();
 }
 
-async function loadGuestWeather(city, seq) {
+async function loadGuestWeather(city, seq, ipPromise) {
   let guest = await fetchNmcGuest(city);
   if (!guest) guest = await fetchOpenMeteoGuest(city);
   if (seq !== loadSeq) return;
-
   if (!guest) {
     document.getElementById('homeContent').innerHTML = `<div class="loading">游客模式数据暂不可用<br><span style="font-size:12px;opacity:0.6">可点击右上角 ⚙ 填入和风天气 Key 使用完整功能</span><br><button class="btn btn-ghost" style="max-width:160px;margin:12px auto 0" onclick="loadWeather()">重试</button></div>`;
     return;
   }
-
   let localWarnings = [], nationwideWarnings = [];
-  try {
-    const [lw, nw] = await Promise.all([loadLocalWarnings(city), loadNationwideWarnings()]);
-    localWarnings = lw; nationwideWarnings = nw;
-  } catch {}
+  try { const [lw, nw] = await Promise.all([loadLocalWarnings(city), loadNationwideWarnings()]); localWarnings = lw; nationwideWarnings = nw; } catch {}
+  const ipInfo = await ipPromise;
   if (seq !== loadSeq) return;
+  if (ipInfo) state.ipInfo = ipInfo;
 
   const obsTime = guest.now.obsTime || '';
   const cityNow = parseCityTime(obsTime)?.timeDisplay || '';
@@ -1135,39 +1145,29 @@ async function loadGuestWeather(city, seq) {
   state.data = {
     city,
     now: {
-      temp: guest.now.temp,
-      text: guest.now.text,
+      temp: guest.now.temp, text: guest.now.text,
       feelsLike: guest.now.feelsLike || guest.now.temp,
       humidity: guest.now.humidity || '—',
-      windDir: guest.now.windDir || '',
-      windScale: guest.now.windScale || '—',
-      windSpeed: guest.now.windSpeed || '—',
-      pressure: guest.now.pressure || '—',
-      vis: guest.now.vis || '—',
-      icon: guest.now.icon || null,
-      dew: '—',
+      windDir: guest.now.windDir || '', windScale: guest.now.windScale || '—',
+      windSpeed: guest.now.windSpeed || '—', pressure: guest.now.pressure || '—',
+      vis: guest.now.vis || '—', icon: guest.now.icon || null, dew: '—',
     },
-    hourly: guest.hourly || [],
-    daily: guest.daily || [],
-    air: guest.air || null,
-    indices: [],
+    hourly: guest.hourly || [], daily: guest.daily || [],
+    air: guest.air || null, indices: [],
     localWarnings, nationwideWarnings,
-    minutely: null,
-    sun: null, moon: null,
+    minutely: null, sun: null, moon: null,
     sources, consensus: null, mae: null,
     weatherVote: { category: guest.now.text, agreement: 1, total: 1 },
-    precip: null,
-    weatherApiFull: null,
-    cityNow, utcOffset,
-    isGuest: true,
+    precip: null, weatherApiFull: null,
+    cityNow, utcOffset, isGuest: true,
     guestSource: guest.sourceLabel || '中央气象台',
+    ipInfo: ipInfo || null,
+    fetchedAt: Date.now(),
   };
   renderAll();
 }
 
-/* ================================================================
-   渲染
-   ================================================================ */
+/* ===== 渲染 ===== */
 function renderAll() {
   const d = state.data; if (!d) return;
   setTheme(d.now.icon || '100');
@@ -1194,7 +1194,6 @@ function buildHome(d) {
   const advice = d.isGuest ? buildGuestAdvice(d) : buildAdvice(d.consensus, d.weatherVote, d.precip, d.now, d.daily, d.air);
   const timeBlock = buildTimeBlock(d);
   const guestBanner = d.isGuest ? `<div class="guest-banner"><span class="gb-icon">🌐</span><span class="gb-text">游客模式 · 数据来自<strong>${d.guestSource}</strong>，免费免 Key。填入和风天气 Key 可解锁多源融合、分钟级降水等完整功能。</span></div>` : '';
-
   return `
     ${guestBanner}
     ${buildWarningBanner(d.localWarnings)}
@@ -1320,6 +1319,7 @@ function buildIndicesPage(indices, isGuest) {
 function buildDetailPage(d) {
   if (d.isGuest) {
     return `
+      ${buildDiagnosticsCard(d)}
       ${buildGuestConfidenceCard(d)}
       <div class="section-label" style="margin-top:16px">详细指标</div>
       ${buildMetrics(d.now, d.air)}
@@ -1332,6 +1332,7 @@ function buildDetailPage(d) {
     `;
   }
   return `
+    ${buildDiagnosticsCard(d)}
     ${buildConfidenceCard(d)}
     <div class="section-label" style="margin-top:16px">详细指标</div>
     ${buildMetrics(d.now, d.air)}
@@ -1340,13 +1341,67 @@ function buildDetailPage(d) {
   `;
 }
 
+/* ===== 诊断卡片 ===== */
+function buildDiagnosticsCard(d) {
+  const ip = d.ipInfo;
+  const browserTz = getBrowserTimeZone();
+  const browserOffset = getUserUtcOffsetLabel();
+  const cityOffset = d.utcOffset || '';
+  const obsTime = d.now?.obsTime || '';
+  const obsCt = parseCityTime(obsTime);
+  const obsDisplay = obsCt ? obsCt.timeDisplay : '—';
+
+  const ipRow = ip
+    ? `<div class="diag-row"><span class="diag-label">IP 地址</span><span class="diag-value">${ip.ip || '—'}</span></div>
+       <div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value">${[ip.country, ip.region, ip.city].filter(Boolean).join(' · ') || '—'}</span></div>
+       <div class="diag-row"><span class="diag-label">IP 时区</span><span class="diag-value">${ip.timezone || '—'}${ip.utcOffset ? '<small>' + ip.utcOffset + '</small>' : ''}</span></div>`
+    : `<div class="diag-row"><span class="diag-label">IP 归属地</span><span class="diag-value warn">检测失败（可能被网络或广告拦截器阻止）</span></div>`;
+
+  let conclusion = { level: 'info', text: '' };
+  if (ip && ip.timezone && browserTz) {
+    if (browserTz !== ip.timezone) {
+      conclusion = { level: 'warn', text: `你的浏览器时区（${browserTz}）与 IP 归属地时区（${ip.timezone}）不一致。这通常意味着手机系统时区设置有误，或正在使用 VPN / 代理。请优先信任 IP 归属地时区。` };
+    } else if (cityOffset && parseOffsetMinutes(cityOffset) !== null && parseOffsetMinutes(cityOffset) !== browserOffset.offsetMin) {
+      conclusion = { level: 'info', text: `你查看的城市（${d.city.name}）与你所在地区不在同一时区。页面已同时显示两个时间，这是正常现象。` };
+    } else {
+      conclusion = { level: 'ok', text: '浏览器时区、IP 归属地时区、目标城市时区三者一致，时间显示正常。' };
+    }
+  } else {
+    conclusion = { level: 'info', text: '无法获取完整 IP 归属地信息，仅展示浏览器时区。' };
+  }
+
+  return `<div class="section-label">网络与时间诊断</div>
+    <div class="diag-card glass">
+      <div class="diag-head">
+        <span class="diag-icon">🩺</span>
+        <span class="diag-title">三方时区一致性检查</span>
+      </div>
+      ${ipRow}
+      <div class="diag-row"><span class="diag-label">浏览器时区</span><span class="diag-value">${browserTz || '—'}<small>${browserOffset.label}</small></span></div>
+      <div class="diag-row"><span class="diag-label">目标城市时区</span><span class="diag-value">${cityOffset || '—'}</span></div>
+      <div class="diag-row"><span class="diag-label">观测时间</span><span class="diag-value">${obsDisplay}<small>${d.city?.name || ''}时间</small></span></div>
+      <div class="diag-conclusion ${conclusion.level}">${conclusion.text}</div>
+      <div class="diag-refresh">
+        <button onclick="refreshDiagnostics(this)">重新检测</button>
+      </div>
+    </div>`;
+}
+
+async function refreshDiagnostics(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '检测中…'; }
+  const ip = await detectIpInfo();
+  if (ip) state.ipInfo = ip;
+  if (state.data) {
+    state.data.ipInfo = ip;
+    document.getElementById('detailContent').innerHTML = buildDetailPage(state.data);
+  }
+  if (!ip) alert('IP 归属地检测失败。可能被网络环境或广告拦截器阻止，或当前网络无法访问 ipwho.is / ipapi.co。\n\n你可以尝试：\n1. 关闭广告拦截器或 VPN\n2. 更换网络后重试');
+}
+
 function buildGuestConfidenceCard(d) {
   return `<div class="section-label">数据源</div>
     <div class="conf-card glass">
-      <div class="conf-head">
-        <span class="conf-icon">🌐</span>
-        <span class="conf-title" style="color:#7ec8e3">游客模式 · ${d.guestSource}</span>
-      </div>
+      <div class="conf-head"><span class="conf-icon">🌐</span><span class="conf-title" style="color:#7ec8e3">游客模式 · ${d.guestSource}</span></div>
       <div class="conf-meta" style="text-align:left;line-height:1.8">
         免费公开数据源，免注册、免 API Key、国内直连。<br>
         实况更新频率约 10 分钟–1 小时，预报每日多次发布。<br>
@@ -1421,9 +1476,7 @@ function buildWeatherApiSummary(wa) {
     </div>`;
 }
 
-/* ================================================================
-   手势 & 初始化
-   ================================================================ */
+/* ===== 手势 & 初始化 ===== */
 const viewsEl = document.getElementById('views');
 let swipeStartX = 0, swipeStartY = 0, swiping = false;
 viewsEl.addEventListener('touchstart', e => {
@@ -1447,7 +1500,6 @@ viewsEl.addEventListener('touchend', e => {
   updateApiStatusBar();
   const hash = location.hash.slice(1);
   if (TABS.includes(hash)) switchTab(hash, false);
-
   if (!state.apiKey) {
     if (state.cities.length) { loadWeather(); }
     else { initLocation(); }
